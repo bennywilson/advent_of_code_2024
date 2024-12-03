@@ -5,6 +5,10 @@
 using namespace std;
 
 bool is_num(const string& inputs, size_t start, size_t end) {
+	if (start == inputs.npos || end == inputs.npos) {
+		return false;
+	}
+
 	for (int i = (int)start; i < end; i++) {
 		if (inputs[i] < '0' || inputs[i] > '9') {
 			return false;
@@ -29,33 +33,32 @@ int main() {
 		if (cur_index == inputs.npos) {
 			break;
 		}
-		
-		const size_t start_index = cur_index + 4;
 
 		// Get arg 1
-		const size_t comma = inputs.find(",", start_index);
-		cur_index = comma;
-		if (!is_num(inputs, start_index, comma)) {
-			cur_index = start_index;
+		const size_t arg1_start = cur_index + 4;
+		cur_index = inputs.find(",", arg1_start);
+		if (!is_num(inputs, arg1_start, cur_index)) {
+			cur_index = arg1_start;
 			continue;
 		}
 
-		inputs[comma] = '\0';
-		int arg1 = atoi(&inputs[start_index]);
+		inputs[cur_index] = '\0';
+		int arg1 = atoi(&inputs[arg1_start]);
 
 		// Get arg 2
-		const size_t end_paren = inputs.find(")", cur_index);
-		if (!is_num(inputs, comma + 1, end_paren)) {
-			cur_index = comma + 1;
+		const size_t arg2_start = cur_index + 1;
+		cur_index = inputs.find(")", arg2_start);
+		if (!is_num(inputs, arg2_start, cur_index)) {
+			cur_index = arg2_start;
 			continue;
 		}
 
-		inputs[end_paren] = '\0';
-		int arg2 = atoi(&inputs[comma + 1]);
+		inputs[cur_index] = '\0';
+		int arg2 = atoi(&inputs[arg2_start]);
 
 		// Multiply!
 		total += arg1 * arg2;
-		cur_index = end_paren + 1;
+		cur_index++;
 		cout << "arg1 is " << arg1 << " arg2 is " << arg2 << endl;
 	}
 
