@@ -4,7 +4,7 @@
 
 using namespace std;
 
-bool is_num(const string& inputs, size_t start, size_t end) {
+bool is_num(const string& inputs, const size_t start, const size_t end) {
 	if (start == inputs.npos || end == inputs.npos) {
 		return false;
 	}
@@ -43,7 +43,7 @@ int main() {
 		}
 
 		inputs[cur_index] = '\0';
-		int arg1 = atoi(&inputs[arg1_start]);
+		const int arg1 = atoi(&inputs[arg1_start]);
 
 		// Get arg 2
 		const size_t arg2_start = cur_index + 1;
@@ -54,7 +54,7 @@ int main() {
 		}
 
 		inputs[cur_index] = '\0';
-		int arg2 = atoi(&inputs[arg2_start]);
+		const int arg2 = atoi(&inputs[arg2_start]);
 
 		// Multiply!
 		total += arg1 * arg2;
