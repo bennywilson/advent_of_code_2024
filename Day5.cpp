@@ -6,7 +6,6 @@
 
 using namespace std;
 
-// 7198
 int main() {
 	ifstream file("input.txt");
 	if (!file.is_open()) {
@@ -28,7 +27,6 @@ int main() {
 		while(ss >> earlier_page) {
 			ss >> divider;
 			ss >> later_page;
-			cout << earlier_page << divider << later_page << endl;
 			page_to_following[earlier_page].insert(later_page);
 		}
 	}
@@ -44,7 +42,6 @@ int main() {
 			char divider;
 			ss >> divider;
 			update_pages.push_back(num);
-			cout << num << " ";
 		}
 		bool in_order = true;
 		for (int i = 1; i < update_pages.size(); i++) {
@@ -59,7 +56,6 @@ int main() {
 		if (in_order) {
 			total_middle_pages += update_pages[update_pages.size() / 2];
 		}
-		cout << endl;
 	}
 
 	cout << "Total middle pages is " << total_middle_pages;
