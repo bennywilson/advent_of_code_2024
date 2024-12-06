@@ -26,12 +26,10 @@ int main() {
 
 		int earlier_page;
 		int later_page;
-		while(ss >> earlier_page) {
+		while (ss >> earlier_page) {
 			ss >> divider;
 			ss >> later_page;
 			page_to_following[earlier_page].insert(later_page);
-
-			cout << earlier_page << divider << later_page << endl;
 		}
 	}
 
@@ -45,13 +43,13 @@ int main() {
 		while (ss >> num) {
 			ss >> divider;
 			update_pages.push_back(num);
-			cout << num << " ";
 		}
 		bool in_order = true;
 		for (int i = 1; i < update_pages.size(); i++) {
-			const int prev = update_pages[i-1];
+			const int prev = update_pages[i - 1];
 			const int next = update_pages[i];
-			if (page_to_following[prev].find(next) == page_to_following[prev].end()) {
+			const unordered_set<int>& following_pages = page_to_following[prev];
+			if (following_pages.find(next) == following_pages.end()) {
 				in_order = false;
 				break;
 			}
@@ -60,15 +58,13 @@ int main() {
 		if (!in_order) {
 			struct page_sorter {
 				inline bool operator() (const int a, const int b) {
-					bool ret = page_to_following[a].find(b) != page_to_following[a].end();
-					cout << "ret = " << ret << " ";
-					return page_to_following[a].find(b) != page_to_following[a].end();
+					const unordered_set<int>& following_pages = page_to_following[a];
+					return following_pages.find(b) != following_pages.end();
 				}
 			};
 			std::sort(update_pages.begin(), update_pages.end(), page_sorter());
 			total_middle_pages += update_pages[update_pages.size() / 2];
 		}
-		cout << endl;
 	}
 
 	cout << "Total middle pages is " << total_middle_pages;
