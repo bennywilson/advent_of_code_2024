@@ -56,12 +56,12 @@ struct Vec2 {
 	int y;
 };
 
-void build_region(const int32_t x, const int32_t y, char cur_char) {
-	if (x < 0 || x >= (int32_t)g_board_width || y < 0 || y >= (int32_t)g_board_width) {
+void build_region(const Vec2& pos, char cur_char) {
+	if (!pos.valid_pos()) {
 		return;
 	}
 
-	const uint32_t board_idx = x + y * g_board_width;
+	const uint32_t board_idx = pos.board_index();
 	if (g_visited.find(board_idx) != g_visited.end()) {
 		return;
 	}
@@ -72,10 +72,10 @@ void build_region(const int32_t x, const int32_t y, char cur_char) {
 
 	g_visited[board_idx] = cur_char;
 
-	build_region(x + 1, y, cur_char);
-	build_region(x - 1, y, cur_char);
-	build_region(x, y + 1, cur_char);
-	build_region(x, y - 1, cur_char);
+	build_region(pos + Vec2(1, 0), cur_char);
+	build_region(pos + Vec2(-1, 0), cur_char);
+	build_region(pos + Vec2(0, 1), cur_char);
+	build_region(pos + Vec2(0, -1), cur_char);
 }
 
 /**
@@ -119,23 +119,14 @@ void part_one() {
 	while (std::getline(file, line)) {
 		g_board += line;
 		g_board_width = max(g_board_width, (int32_t)line.length());
-	//	cout << line << endl;
 	}
 
 	for (size_t i = 0; i < g_board.size(); i++) {
 		const int32_t x = (int32_t)(i % g_board_width);
 		const int32_t y = (int32_t)(i / g_board_width);
-		build_region(x, y, g_board[i]);
+		build_region(Vec2(x, y), g_board[i]);
 	}
 
-/*/	cout << "\n\n=== Da Board ===\n";
-	for (size_t i = 0; i < g_board.size(); i++) {
-		cout << g_visited[(uint32_t)i] << " ";
-		if ((i + 1) % g_board_width == 0) {
-			cout << endl;
-		}
-	}*/
-	//cout << "\n\n=== Da Perimeter ===\n";
 	g_visited.clear();
 	uint32_t total = 0;
 
@@ -146,7 +137,6 @@ void part_one() {
 		uint32_t perimeter = 0;
 
 		calculate_cost(Vec2(x, y), g_board[i], perimeter, area);
-		//cout << area << "*" << perimeter << endl;
 		total += area * perimeter;
 	}
 
@@ -157,13 +147,13 @@ void part_one() {
  *	Part 2 Functions
  */
 void clear_line(Vec2 current, const Vec2& dir, const Vec2& perp_dir, const char val, unordered_set<uint32_t>& set) {
-	while(current.valid_pos()) {
-		int cur_idx = current.board_index();
+	while (current.valid_pos()) {
+		const int cur_idx = current.board_index();
 		if (g_board[cur_idx] != val) {
 			return;
 		}
-		Vec2 perp_pos = current + perp_dir;
 
+		const Vec2 perp_pos = current + perp_dir;
 		if (perp_pos.valid_pos()) {
 			if (g_board[perp_pos.board_index()] == val) {
 				return;
@@ -175,15 +165,14 @@ void clear_line(Vec2 current, const Vec2& dir, const Vec2& perp_dir, const char 
 	}
 }
 
+// returns if edge
 bool calculate_cost_2(const int32_t x, const int32_t y, char cur_char, uint32_t& area, uint32_t& cost) {
 	if (x < 0 || x >= (int32_t)g_board_width || y < 0 || y >= (int32_t)g_board_width) {
-		// edge
 		return true;
 	}
 
 	const uint32_t board_idx = x + y * g_board_width;
 	if (g_board[board_idx] != cur_char) {
-		// edge
 		return true;
 	}
 
@@ -247,7 +236,7 @@ void part_two() {
 	for (size_t i = 0; i < g_board.size(); i++) {
 		const int32_t x = (int32_t)(i % g_board_width);
 		const int32_t y = (int32_t)(i / g_board_width);
-		build_region(x, y, g_board[i]);
+		build_region(Vec2(x, y), g_board[i]);
 	}
 
 	g_visited.clear();
@@ -278,5 +267,3 @@ int main() {
 	part_one();
 	part_two();
 }
-// 1483212
-// 897062
