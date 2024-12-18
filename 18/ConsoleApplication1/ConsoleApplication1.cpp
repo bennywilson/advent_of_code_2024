@@ -10,8 +10,8 @@ using namespace std;
 using namespace std::chrono;
 
 string g_board;
-int64_t g_board_width = 7;
-int64_t g_board_height = 7;
+int64_t g_board_width = 70;
+int64_t g_board_height = 70;
 
 
 
@@ -117,11 +117,11 @@ struct Vec2 {
 };
 
 struct Key {
-	Key() { }
+	Key() : idx(UINT64_MAX) { }
 
 	Key(uint64_t _idx, Vec2 _prev = Vec2(-1,-1)) :
 		idx(_idx),
-		prev(_prev) {}
+		prev(_prev){}
 
 	uint64_t idx;
 	Vec2 prev;
@@ -143,31 +143,41 @@ void part_one() {
 	if (!file.is_open()) {
 		return;
 	}
+	g_board_width = 71;
+	g_board_height = 71;
+	uint64_t max_corrupted_bytes = 1;
+	for (int i = 0; i < g_board_width * g_board_height; i++) {
+		g_board.push_back('.');
+	}
+	Vec2 goal_pos(g_board_width - 1, g_board_height - 1);
 
-	int64_t g_board_width = 7;
-	int64_t g_board_height = 7;
-	Vec2 goal_pos(6, 6);
+	vector<Vec2> corrupted_bytes_pos;
+	unordered_map<uint64_t, uint64_t> corrupted_bytes;
 
-	vector<Vec2> corrupted_bytes;
 
 	string line;
 	char empty_char;
 	Vec2 new_byte;
 	while (file >> new_byte.x) {
 		file >> empty_char >> new_byte.y;
-		
+
+		corrupted_bytes[new_byte.index()] = corrupted_bytes_pos.size();
+		corrupted_bytes_pos.push_back(new_byte);
+
+		if (corrupted_bytes.size() == 1024) {
+			break;
+		}
 		cout << "New byte is " << new_byte.x << "," << new_byte.y << endl;
 	}
 
-	g_board = "...#.....#..#.....#.....#..#..#..#..#..#..#.#....";
 	queue<Key> q;
-	q.push(Key(Vec2(0, 0).index()));
+	q.push(Key(Vec2(0, 0).index(), 0));
 	unordered_map<uint64_t, Key> visited;
 
-//	bool path_found = false;
 	while (!q.empty()) {
 		const Key cur_key = q.front();
 		const uint64_t cur_idx = cur_key.idx;
+
 		q.pop();
 
 		const Vec2 cur_pos(cur_idx);
@@ -175,16 +185,17 @@ void part_one() {
 			continue;
 		}
 
-		if (g_board[cur_idx] == '#') {
+		visited[cur_idx] = cur_key;
+
+		if (cur_pos.x == goal_pos.x && cur_pos.y == goal_pos.y) {
+			break;
+		}
+
+		const auto& corrupted_byte = corrupted_bytes.find(cur_pos.index());
+		if (corrupted_byte != corrupted_bytes.end()) {
 			continue;
 		}
 
-		visited[cur_idx] = cur_key;
-		if (cur_idx == goal_pos.index()) {
-			static int breakhere = 0;
-			breakhere++;
-			break;
-		}
 		const Vec2 left = cur_pos + Vec2(-1, 0);
 		if (left.valid()) {
 			q.push(Key(left.index(), cur_pos));
@@ -204,25 +215,102 @@ void part_one() {
 
 	}
 
+	uint64_t step_count = 0;
 	Vec2 back_track = goal_pos;
 	while (back_track.index() != 0) {
 		const Key cur_key = visited.find(back_track.index())->second;
 		g_board[cur_key.idx] = 'O';
 		back_track = cur_key.prev;
-		
+		step_count++;		
 	}
-	
-	print_board();
-	/*auto it = visited.find(Vec2(5,5).index());
-	if (it != visited.end()) {
-		uint64_t idx = it->idx;
-		while (idx != 0) {
-			g_board[idx] = 'O';
+	for (int i = 0; i < corrupted_bytes_pos.size(); i++) {
+		g_board[corrupted_bytes_pos[i].index()] = '#';
+	}
 
-			idx = it->prev.index();			
-			it = visisted.find
+	print_board();
+	cout << endl << "Num steps is " << step_count << endl;
+}
+
+void part_two() {
+	ifstream file("input.txt");
+	if (!file.is_open()) {
+		return;
+	}
+	g_board_width = 71;
+	g_board_height = 71;
+	uint64_t max_corrupted_bytes = 1;
+	for (int i = 0; i < g_board_width * g_board_height; i++) {
+		g_board.push_back('.');
+	}
+	Vec2 goal_pos(g_board_width - 1, g_board_height - 1);
+
+	vector<Vec2> corrupted_bytes_pos;
+	unordered_map<uint64_t, uint64_t> corrupted_bytes;
+
+	string line;
+	char empty_char;
+	Vec2 new_byte;
+	while (file >> new_byte.x) {
+		file >> empty_char >> new_byte.y;
+
+		corrupted_bytes[new_byte.index()] = corrupted_bytes_pos.size();
+		corrupted_bytes_pos.push_back(new_byte);
+	}
+
+	for (int i = 1024; i < corrupted_bytes.size(); i++) {
+		static int breakhere = 0;	
+		breakhere++;
+		queue<Key> q;
+		q.push(Key(Vec2(0, 0).index(), 0));
+		unordered_map<uint64_t, Key> visited;
+
+		bool path_reached = false;
+		while (!q.empty()) {
+			const Key cur_key = q.front();
+			const uint64_t cur_idx = cur_key.idx;
+			q.pop();
+
+			const Vec2 cur_pos(cur_idx);
+			if (visited.find(cur_idx) != visited.end()) {
+				continue;
+			}
+
+			visited[cur_idx] = cur_key;
+
+			if (cur_pos.x == goal_pos.x && cur_pos.y == goal_pos.y) {
+				path_reached = true;
+				break;
+			}
+
+			const auto& corrupted_byte = corrupted_bytes.find(cur_pos.index());
+			if (corrupted_byte != corrupted_bytes.end() && corrupted_byte->second <= i) {
+				continue;
+			}
+
+			const Vec2 left = cur_pos + Vec2(-1, 0);
+			if (left.valid()) {
+				q.push(Key(left.index(), cur_pos));
+			}
+			const Vec2 right = cur_pos + Vec2(1, 0);
+			if (right.valid()) {
+				q.push(Key(right.index(), cur_pos));
+			}
+			const Vec2 up = cur_pos + Vec2(0, -1);
+			if (up.valid()) {
+				q.push(Key(up.index(), cur_pos));
+			}
+			const Vec2 down = cur_pos + Vec2(0, 1);
+			if (down.valid()) {
+				q.push(Key(down.index(), cur_pos));
+			}
+
 		}
-	}*/
+
+		if (!path_reached) {
+			cout << "Path blocked by corrupted by at time " << i << " with position (" << corrupted_bytes_pos[i].x << "," << corrupted_bytes_pos[i].y << endl;
+			break;
+		}
+	}
 }
 
 /**
@@ -232,6 +320,6 @@ int main() {
 	cout << "Part one...\n";
 	part_one();
 
+	cout << "\n\nPart one...\n";
+	part_two();
 }
-
-// 6,2,7,2,3,1,6,0,5,

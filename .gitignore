@@ -16,3 +16,5 @@
 *.enc
 *.ipdb
 *.FileListAbsolute.txt
+*.db-shm
+*.opendb
