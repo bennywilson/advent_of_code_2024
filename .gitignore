@@ -18,3 +18,4 @@
 *.FileListAbsolute.txt
 *.db-shm
 *.opendb
+*.db-wal

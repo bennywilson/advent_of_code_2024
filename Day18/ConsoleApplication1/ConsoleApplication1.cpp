@@ -2,8 +2,6 @@
 #include <fstream>
 #include <iostream>
 #include <unordered_map>
-#include <unordered_set>
-#include <sstream>
 #include <queue>
 
 using namespace std;
@@ -117,25 +115,16 @@ struct Vec2 {
 };
 
 struct Key {
-	Key() : idx(UINT64_MAX) { }
+	Key() : idx(UINT64_MAX), steps(0) { }
 
-	Key(uint64_t _idx, Vec2 _prev = Vec2(-1,-1)) :
+	Key(uint64_t _idx, const uint64_t _steps) :
 		idx(_idx),
-		prev(_prev){}
+		steps(_steps){}
 
 	uint64_t idx;
-	Vec2 prev;
+	uint64_t steps;
 
 	bool operator==(const Key& op1) const { return idx == op1.idx; }
-};
-
-namespace std {
-	template<> struct hash<Key> {
-		size_t operator()(const Key& r) const {
-			size_t res = hash<uint64_t>{}(r.idx);
-			return res;
-		}
-	};
 };
 
 void part_one() {
@@ -143,17 +132,19 @@ void part_one() {
 	if (!file.is_open()) {
 		return;
 	}
+
 	g_board_width = 71;
+
 	g_board_height = 71;
 	uint64_t max_corrupted_bytes = 1;
 	for (int i = 0; i < g_board_width * g_board_height; i++) {
 		g_board.push_back('.');
 	}
+
 	Vec2 goal_pos(g_board_width - 1, g_board_height - 1);
 
 	vector<Vec2> corrupted_bytes_pos;
 	unordered_map<uint64_t, uint64_t> corrupted_bytes;
-
 
 	string line;
 	char empty_char;
@@ -167,17 +158,17 @@ void part_one() {
 		if (corrupted_bytes.size() == 1024) {
 			break;
 		}
-		cout << "New byte is " << new_byte.x << "," << new_byte.y << endl;
 	}
 
 	queue<Key> q;
 	q.push(Key(Vec2(0, 0).index(), 0));
 	unordered_map<uint64_t, Key> visited;
 
+	int64_t steps_to_goal = -1;
+
 	while (!q.empty()) {
 		const Key cur_key = q.front();
 		const uint64_t cur_idx = cur_key.idx;
-
 		q.pop();
 
 		const Vec2 cur_pos(cur_idx);
@@ -188,6 +179,7 @@ void part_one() {
 		visited[cur_idx] = cur_key;
 
 		if (cur_pos.x == goal_pos.x && cur_pos.y == goal_pos.y) {
+			steps_to_goal = cur_key.steps;
 			break;
 		}
 
@@ -196,39 +188,41 @@ void part_one() {
 			continue;
 		}
 
+		const uint64_t next_steps = cur_key.steps + 1;
 		const Vec2 left = cur_pos + Vec2(-1, 0);
 		if (left.valid()) {
-			q.push(Key(left.index(), cur_pos));
+			q.push(Key(left.index(), next_steps));
 		}
+
 		const Vec2 right = cur_pos + Vec2(1, 0);
 		if (right.valid()) {
-			q.push(Key(right.index(), cur_pos));
+			q.push(Key(right.index(), next_steps));
 		}
+
 		const Vec2 up = cur_pos + Vec2(0, -1);
 		if (up.valid()) {
-			q.push(Key(up.index(), cur_pos));
+			q.push(Key(up.index(), next_steps));
 		}
+
 		const Vec2 down = cur_pos + Vec2(0, 1);
 		if (down.valid()) {
-			q.push(Key(down.index(), cur_pos));
+			q.push(Key(down.index(), next_steps));
 		}
 
 	}
 
-	uint64_t step_count = 0;
-	Vec2 back_track = goal_pos;
-	while (back_track.index() != 0) {
-		const Key cur_key = visited.find(back_track.index())->second;
-		g_board[cur_key.idx] = 'O';
-		back_track = cur_key.prev;
-		step_count++;		
-	}
 	for (int i = 0; i < corrupted_bytes_pos.size(); i++) {
 		g_board[corrupted_bytes_pos[i].index()] = '#';
 	}
 
 	print_board();
-	cout << endl << "Num steps is " << step_count << endl;
+
+	if (steps_to_goal > 0) {
+		cout << "Goal (" << goal_pos.x << "," << goal_pos.y << ") reached.  Num steps is " << steps_to_goal << endl;
+	}
+	else {
+		cout << "Goal (" << goal_pos.x << "," << goal_pos.y << ") was not reached." << endl;
+	}
 }
 
 void part_two() {
@@ -287,27 +281,30 @@ void part_two() {
 				continue;
 			}
 
+			const uint64_t next_steps = cur_key.steps + 1;
 			const Vec2 left = cur_pos + Vec2(-1, 0);
 			if (left.valid()) {
-				q.push(Key(left.index(), cur_pos));
-			}
-			const Vec2 right = cur_pos + Vec2(1, 0);
-			if (right.valid()) {
-				q.push(Key(right.index(), cur_pos));
-			}
-			const Vec2 up = cur_pos + Vec2(0, -1);
-			if (up.valid()) {
-				q.push(Key(up.index(), cur_pos));
-			}
-			const Vec2 down = cur_pos + Vec2(0, 1);
-			if (down.valid()) {
-				q.push(Key(down.index(), cur_pos));
+				q.push(Key(left.index(), next_steps));
 			}
 
+			const Vec2 right = cur_pos + Vec2(1, 0);
+			if (right.valid()) {
+				q.push(Key(right.index(), next_steps));
+			}
+
+			const Vec2 up = cur_pos + Vec2(0, -1);
+			if (up.valid()) {
+				q.push(Key(up.index(), next_steps));
+			}
+
+			const Vec2 down = cur_pos + Vec2(0, 1);
+			if (down.valid()) {
+				q.push(Key(down.index(), next_steps));
+			}
 		}
 
 		if (!path_reached) {
-			cout << "Path blocked by corrupted by at time " << i << " with position (" << corrupted_bytes_pos[i].x << "," << corrupted_bytes_pos[i].y << endl;
+			cout << "Path blocked by corrupted by at time " << i << " with position (" << corrupted_bytes_pos[i].x << "," << corrupted_bytes_pos[i].y << ")\n";
 			break;
 		}
 	}
@@ -320,6 +317,6 @@ int main() {
 	cout << "Part one...\n";
 	part_one();
 
-	cout << "\n\nPart one...\n";
+	cout << "\n\nPart two...\n";
 	part_two();
 }
