@@ -2,6 +2,7 @@
 #include <fstream>
 #include <iostream>
 #include <unordered_map>
+#include <unordered_set>
 #include <queue>
 #include <sstream>
 #include <windows.h>
@@ -10,9 +11,57 @@
 using namespace std;
 using namespace std::chrono;
 
-template<typename T>
-bool vec_contains(const vector<T>& vec, const T& value) {
+template<typename V, typename T>
+bool std_contains(const V& vec, const T& value) {
 	return std::find(vec.begin(), vec.end(), value) != vec.end();
+}
+
+template<typename V, typename T>
+bool map_contains(const V& vec, const T& value) {
+	return vec.find(value) != vec.end();
+}
+
+
+string tabs;
+
+bool find_matches(string design, unordered_set<string>& patterns, unordered_map<string, bool>& cache) {
+	//cout << design << endl;
+
+
+	if (map_contains(cache, design)) {
+		return cache[design];
+	}
+
+	if (std_contains(patterns, design)) {
+	//	cout << tabs << "Match found for " << design << endl;
+		return true;
+	}
+
+	if (design.size() == 1) {
+	//	cout << tabs << "Match not found for " << design << endl;
+		return false;
+	}
+
+	for (size_t l = design.length() - 1; l >= 1; l--) {
+		string first = design.substr(0, l);
+		string second = design.substr(l);
+
+//		cout << tabs << "Matching " << first << " and " << second << "..." << endl;
+		tabs += "    ";
+		if (find_matches(first, patterns, cache) && find_matches(second, patterns, cache)) {
+			tabs.pop_back();
+			tabs.pop_back();
+			tabs.pop_back();
+			cache[design] = true;
+			return true;
+		}
+	}
+
+	tabs.pop_back();
+	tabs.pop_back();
+	tabs.pop_back();
+	cache[design] = false;
+	return false;
 }
 
 void part_one() {
@@ -23,6 +72,8 @@ void part_one() {
 
 	string line;
 	vector<string> patterns;
+	unordered_set<string> pattern_set;
+
 	while (std::getline(file, line) && line.size() > 0) {
 		stringstream ss(line);
 		string pattern;
@@ -30,9 +81,10 @@ void part_one() {
 			if (pattern.back() == ',') {
 				pattern = pattern.substr(0, pattern.length() - 1);
 			}
-			if (!vec_contains(patterns, pattern)) {
+			if (!std_contains(patterns, pattern)) {
 				//cout << "Pushing " << pattern << endl;
 				patterns.push_back(pattern);
+				pattern_set.insert(pattern);
 			}
 		}
 	}
@@ -52,6 +104,22 @@ void part_one() {
 		cout << designs[i] << endl;
 	}
 
+	uint64_t num_found = 0;
+	for (int i = 0; i < designs.size(); i++) {
+		cout << designs[i] << " ";
+		unordered_map<string, bool> cache;
+		if (find_matches(designs[i], pattern_set, cache)) {
+			num_found++;
+			cout << " was found!";
+		}
+		else {
+			cout << " was not found!";
+		}
+
+		cout << endl;
+	}
+
+	cout << "Num found is " << num_found << endl;
 }
 
 /**
@@ -61,3 +129,5 @@ int main() {
 	cout << "Part one...\n";
 	part_one();
 }
+
+// 278

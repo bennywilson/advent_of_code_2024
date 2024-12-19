@@ -7,11 +7,10 @@
 #include <conio.h>
 
 using namespace std;
-using namespace std::chrono;
 
 wstring g_board;
-int64_t g_board_width = 70;
-int64_t g_board_height = 70;
+int64_t g_board_width = 0;
+int64_t g_board_height = 0;
 
 
 /**
@@ -127,8 +126,8 @@ cfi.FontFamily= 99;
 	}
 
 	wstring the_output;
-	for (int64_t y = 0; y < g_board_height; y++) {
-		for (int64_t x = 0; x < g_board_width; x++) {
+	for (int64_t y = 55; y < g_board_height; y++) {
+		for (int64_t x = 0; x < 15; x++) {
 			if (player_pos == Vec2(x, y)) {
 				the_output += L"😊";
 			}
@@ -260,10 +259,12 @@ void part_one() {
 			cur_key = visited[cur_key.prev];
 		}
 
-		for (auto it = path.rbegin(); it != path.rend(); ++it) {
+
+		for (auto it = path.rbegin() + 165; it != path.rend(); ++it) {
+	//count++;
 			print_board(true, Vec2(*it));
 			Sleep(500);
-			getchar();
+			//getchar();
 		}
 
 	//	cout << "Goal (" << goal_pos.x << "," << goal_pos.y << ") reached.  Num steps is " << steps_to_goal << endl;
