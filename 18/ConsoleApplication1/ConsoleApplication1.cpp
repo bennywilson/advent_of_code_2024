@@ -1,69 +1,18 @@
-#include <chrono>
+﻿#include <chrono>
 #include <fstream>
 #include <iostream>
 #include <unordered_map>
 #include <queue>
+#include <windows.h>
+#include <conio.h>
 
 using namespace std;
 using namespace std::chrono;
 
-string g_board;
+wstring g_board;
 int64_t g_board_width = 70;
 int64_t g_board_height = 70;
 
-
-
-void print_board() {
-
-/*	HANDLE hStdOut = GetStdHandle(STD_OUTPUT_HANDLE);
-
-	DWORD mode = 0;
-	if (!GetConsoleMode(hStdOut, &mode)) {
-		return;
-	}
-
-	// Hold original mode to restore on exit to be cooperative with other command-line apps.
-	const DWORD originalMode = mode | ENABLE_VIRTUAL_TERMINAL_PROCESSING;
-
-	// Try to set the mode.
-	if (!SetConsoleMode(hStdOut, mode)) {
-		return;
-	}
-
-	// Write the sequence for clearing the display.
-	DWORD written = 0;
-	PCWSTR sequence = L"\x1b[2J";
-	if (!WriteConsoleW(hStdOut, sequence, (DWORD)wcslen(sequence), &written, NULL)) {
-		SetConsoleMode(hStdOut, originalMode);
-		return;
-	}
-
-	sequence = L"\x1b[3J";
-	if (!WriteConsoleW(hStdOut, sequence, (DWORD)wcslen(sequence), &written, NULL)) {
-		SetConsoleMode(hStdOut, originalMode);
-		return;
-
-	}
-	sequence = L"\x1b[H";
-	if (!WriteConsoleW(hStdOut, sequence, (DWORD)wcslen(sequence), &written, NULL)) {
-		SetConsoleMode(hStdOut, originalMode);
-		return;
-
-	}
-	SetConsoleMode(hStdOut, originalMode);*/
-
-	string the_output;
-	for (int64_t y = 0; y < g_board_height; y++) {
-		for (int64_t x = 0; x < g_board_width; x++) {
-			the_output += g_board[x + y * g_board_width];
-		}
-		the_output += "\n";
-		//		cout << endl;
-	}
-	printf("%s", the_output.c_str());
-	//	cout << the_output << endl;
-	//Sleep(100);
-}
 
 /**
  *	Global Functions
@@ -94,7 +43,7 @@ struct Vec2 {
 		return Vec2(op2 * x, op2 * y);
 	}
 
-	bool operator==(const Vec2& op2) {
+	bool operator==(const Vec2& op2) const {
 		return x == op2.x && y == op2.y;
 	}
 
@@ -113,16 +62,97 @@ struct Vec2 {
 	int64_t x;
 	int64_t y;
 };
+#include <io.h>
+#include <fcntl.h>
+#include <stdio.h>
+
+void print_board(const bool clear_console, Vec2 player_pos = Vec2(-1, -1)) {
+
+	_setmode(_fileno(stdout), _O_U16TEXT); // <=== Windows madness
+
+	if (clear_console) {
+	//	SetConsoleOutputCP(1200);
+		HANDLE hStdOut = GetStdHandle(STD_OUTPUT_HANDLE);
+	//	CONSOLE_FONT_INFOEX cfi = { sizeof(cfi) };
+		//_setmode(_fileno(stdout), _O_WTEXT);
+/***/
+		/*HANDLE hcsb = CreateFileA("CONOUT$", GENERIC_WRITE | GENERIC_READ,
+			FILE_SHARE_WRITE, NULL, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, NULL);*/
+		// Populate cfi with the screen buffer's current font info
+	/*	GetCurrentConsoleFontEx(hStdOut, FALSE, &cfi);
+
+		// Modify the font size in cfi
+		cfi.dwFontSize.X *= 52;
+		cfi.dwFontSize.Y *= 62;
+cfi.FontFamily= 99;
+		// Use cfi to set the screen buffer's new font
+		SetCurrentConsoleFontEx(hStdOut, FALSE, &cfi);*/
+
+	//	CloseHandle(hcsb);
+		/***/
+		DWORD mode = 0;
+		if (!GetConsoleMode(hStdOut, &mode)) {
+			return;
+		}
+
+		// Hold original mode to restore on exit to be cooperative with other command-line apps.
+		const DWORD originalMode = mode | ENABLE_VIRTUAL_TERMINAL_PROCESSING;
+
+		// Try to set the mode.
+		if (!SetConsoleMode(hStdOut, mode)) {
+			return;
+		}
+
+		// Write the sequence for clearing the display.
+		DWORD written = 0;
+		PCWSTR sequence = L"\x1b[2J";
+		if (!WriteConsoleW(hStdOut, sequence, (DWORD)wcslen(sequence), &written, NULL)) {
+			SetConsoleMode(hStdOut, originalMode);
+			return;
+		}
+
+		sequence = L"\x1b[3J";
+		if (!WriteConsoleW(hStdOut, sequence, (DWORD)wcslen(sequence), &written, NULL)) {
+			SetConsoleMode(hStdOut, originalMode);
+			return;
+
+		}
+		sequence = L"\x1b[H";
+		if (!WriteConsoleW(hStdOut, sequence, (DWORD)wcslen(sequence), &written, NULL)) {
+			SetConsoleMode(hStdOut, originalMode);
+			return;
+
+		}
+		SetConsoleMode(hStdOut, originalMode);
+	}
+
+	wstring the_output;
+	for (int64_t y = 0; y < g_board_height; y++) {
+		for (int64_t x = 0; x < g_board_width; x++) {
+			if (player_pos == Vec2(x, y)) {
+				the_output += L"😊";
+			}
+			else {
+				the_output += g_board[x + y * g_board_width];
+			}
+		}
+		the_output += L"\n";
+	}
+	wcout << the_output.c_str() << endl;
+//	printf("%s", the_output.c_str());
+}
 
 struct Key {
 	Key() : idx(UINT64_MAX), steps(0) { }
 
-	Key(uint64_t _idx, const uint64_t _steps) :
+	Key(uint64_t _idx, const uint64_t _steps, const uint64_t _prev) :
 		idx(_idx),
-		steps(_steps){}
+		steps(_steps),
+		prev(_prev) {}
 
 	uint64_t idx;
 	uint64_t steps;
+	uint64_t prev;		// Debug
 
 	bool operator==(const Key& op1) const { return idx == op1.idx; }
 };
@@ -138,7 +168,7 @@ void part_one() {
 	g_board_height = 71;
 	uint64_t max_corrupted_bytes = 1;
 	for (int i = 0; i < g_board_width * g_board_height; i++) {
-		g_board.push_back('.');
+		g_board.push_back(L'　');
 	}
 
 	Vec2 goal_pos(g_board_width - 1, g_board_height - 1);
@@ -155,13 +185,13 @@ void part_one() {
 		corrupted_bytes[new_byte.index()] = corrupted_bytes_pos.size();
 		corrupted_bytes_pos.push_back(new_byte);
 
-		if (corrupted_bytes.size() == 1024) {
+		if (corrupted_bytes.size() == 2956) {
 			break;
 		}
 	}
 
 	queue<Key> q;
-	q.push(Key(Vec2(0, 0).index(), 0));
+	q.push(Key(Vec2(0, 0).index(), 0, INT64_MAX));
 	unordered_map<uint64_t, Key> visited;
 
 	int64_t steps_to_goal = -1;
@@ -191,36 +221,55 @@ void part_one() {
 		const uint64_t next_steps = cur_key.steps + 1;
 		const Vec2 left = cur_pos + Vec2(-1, 0);
 		if (left.valid()) {
-			q.push(Key(left.index(), next_steps));
+			q.push(Key(left.index(), next_steps, cur_idx));
 		}
 
 		const Vec2 right = cur_pos + Vec2(1, 0);
 		if (right.valid()) {
-			q.push(Key(right.index(), next_steps));
+			q.push(Key(right.index(), next_steps, cur_idx));
 		}
 
 		const Vec2 up = cur_pos + Vec2(0, -1);
 		if (up.valid()) {
-			q.push(Key(up.index(), next_steps));
+			q.push(Key(up.index(), next_steps, cur_idx));
 		}
 
 		const Vec2 down = cur_pos + Vec2(0, 1);
 		if (down.valid()) {
-			q.push(Key(down.index(), next_steps));
+			q.push(Key(down.index(), next_steps, cur_idx));
 		}
 
 	}
 
 	for (int i = 0; i < corrupted_bytes_pos.size(); i++) {
-		g_board[corrupted_bytes_pos[i].index()] = '#';
+		g_board[corrupted_bytes_pos[i].index()] = L'♊';
 	}
 
-	print_board();
+
+	print_board(true);
+	getchar();
+	print_board(true);
+	getchar();
+	Sleep(3000);
 
 	if (steps_to_goal > 0) {
-		cout << "Goal (" << goal_pos.x << "," << goal_pos.y << ") reached.  Num steps is " << steps_to_goal << endl;
+		vector<uint64_t> path;
+		Key cur_key = visited[goal_pos.index()];
+		while (cur_key.idx != 0) {
+			path.push_back(cur_key.idx);
+			cur_key = visited[cur_key.prev];
+		}
+
+		for (auto it = path.rbegin(); it != path.rend(); ++it) {
+			print_board(true, Vec2(*it));
+			Sleep(500);
+			getchar();
+		}
+
+	//	cout << "Goal (" << goal_pos.x << "," << goal_pos.y << ") reached.  Num steps is " << steps_to_goal << endl;
 	}
 	else {
+		print_board(false, Vec2(0, 0));
 		cout << "Goal (" << goal_pos.x << "," << goal_pos.y << ") was not reached." << endl;
 	}
 }
@@ -234,7 +283,7 @@ void part_two() {
 	g_board_height = 71;
 	uint64_t max_corrupted_bytes = 1;
 	for (int i = 0; i < g_board_width * g_board_height; i++) {
-		g_board.push_back('.');
+		g_board.push_back(L' ');
 	}
 	Vec2 goal_pos(g_board_width - 1, g_board_height - 1);
 
@@ -255,7 +304,7 @@ void part_two() {
 		static int breakhere = 0;	
 		breakhere++;
 		queue<Key> q;
-		q.push(Key(Vec2(0, 0).index(), 0));
+		q.push(Key(Vec2(0, 0).index(), 0, INT64_MAX));
 		unordered_map<uint64_t, Key> visited;
 
 		bool path_reached = false;
@@ -284,22 +333,22 @@ void part_two() {
 			const uint64_t next_steps = cur_key.steps + 1;
 			const Vec2 left = cur_pos + Vec2(-1, 0);
 			if (left.valid()) {
-				q.push(Key(left.index(), next_steps));
+				q.push(Key(left.index(), next_steps, cur_idx));
 			}
 
 			const Vec2 right = cur_pos + Vec2(1, 0);
 			if (right.valid()) {
-				q.push(Key(right.index(), next_steps));
+				q.push(Key(right.index(), next_steps, cur_idx));
 			}
 
 			const Vec2 up = cur_pos + Vec2(0, -1);
 			if (up.valid()) {
-				q.push(Key(up.index(), next_steps));
+				q.push(Key(up.index(), next_steps, cur_idx));
 			}
 
 			const Vec2 down = cur_pos + Vec2(0, 1);
 			if (down.valid()) {
-				q.push(Key(down.index(), next_steps));
+				q.push(Key(down.index(), next_steps, cur_idx));
 			}
 		}
 
