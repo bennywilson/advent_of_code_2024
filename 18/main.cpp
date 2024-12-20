@@ -1,10 +1,13 @@
 ﻿#include <chrono>
+#include <conio.h>
+#include <fcntl.h>
 #include <fstream>
+#include <io.h>
 #include <iostream>
 #include <unordered_map>
 #include <queue>
+#include <stdio.h>
 #include <windows.h>
-#include <conio.h>
 
 using namespace std;
 
@@ -61,9 +64,6 @@ struct Vec2 {
 	int64_t x;
 	int64_t y;
 };
-#include <io.h>
-#include <fcntl.h>
-#include <stdio.h>
 
 void print_board(const bool clear_console, Vec2 player_pos = Vec2(-1, -1)) {
 
