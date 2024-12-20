@@ -193,23 +193,19 @@ uint64_t find_path(const Vec2& cur_pos, const Vec2& prev, const Vec2& goal, uint
 	}
 
 	if (g_board[cur_pos.index()] == '#') {
-		if (cheat_indices.size() == 2 || std_contains(cheat_indices, cur_idx)) {
+		if (cheat_indices.size() == 1 || std_contains(cheat_indices, cur_idx)) {
 			return 0;
-		}
-		if (cur_idx == 115) {
-			static int breakhere =0;
-			breakhere++;
 		}
 		cheat_indices.insert(cur_idx);
 	}
-	else if (prev.valid() && g_board[prev.index()] == '#') {
-		if (cheat_indices.size() < 2) {
+	/*else if (prev.valid() && g_board[prev.index()] == '#') {
+		if (cheat_indices.size() < 1 && !std_contains(cheat_indices, cur_idx)) {
 			cheat_indices.insert(cur_idx);
 		} else {
 			return 0;
 		}
 
-	}
+	}*/
 
 	const Vec2 dirs[] = {
 		Vec2(1, 0),
@@ -219,14 +215,14 @@ uint64_t find_path(const Vec2& cur_pos, const Vec2& prev, const Vec2& goal, uint
 	};
 
 	uint64_t path_count = 0;
+	if (std_contains(cur_path, cur_pos.index())) {
+		static int how = 0;
+		how++;
+	}
 	cur_path.push_back(cur_pos.index());
 
 	visited[cur_key] = cur_cost;
 	for (int i = 0; i < 4; i++) {
-		if (cur_idx == 115 && g_board[cur_idx] == '#' && all_paths.size() == 45) {
-			static int breakhere = 0;
-			breakhere++;
-		}
 		const Vec2 next_pos = cur_pos + dirs[i];
 		if (next_pos == prev) {
 			continue;
@@ -289,7 +285,7 @@ void part_one() {
 	unordered_map<uint64_t, uint64_t> path_info;
 
 	for (int i = 0; i < all_paths.size(); i++) {
-		uint64_t path_len = all_paths[i].size() - 2;
+		uint64_t path_len = all_paths[i].size();
 		if (path_len < min_val) {
 			min_val = all_paths[i].size();
 			min_idx = i;
@@ -303,9 +299,32 @@ void part_one() {
 		path_info[max_val - (max_val - all_paths[i].size())]++;
 	}
 
-	min_idx = 45;
 
-	unordered_set<uint64_t> visited;
+	unordered_set<uint64_t> touched_cells;
+	print_board(false, start, end, touched_cells);
+	for (int i = 0; i < all_paths.size(); i++) {
+		vector<uint64_t>& cur_path = all_paths[i];
+		for (int k = 0; k < cur_path.size(); k++) {
+			if (std::find(cur_path.begin() + k + 1, cur_path.end(), cur_path[k]) != cur_path.end()) {
+				static int what = 0;
+				what++;
+			}
+		}
+
+		if (cur_path.size() == max_val - 64) {
+
+			touched_cells.clear();
+			for (size_t j = 0; j < cur_path.size(); j++) {
+				touched_cells.insert(cur_path[j]);
+				
+			}
+			print_board(false, start, end, touched_cells);
+		}
+
+	}
+//	min_idx = 45;
+
+//	unordered_set<uint64_t> visited;
 	vector<uint64_t>& the_path = all_paths[min_idx];
 	/*for (int l = 1; l < the_path.size(); l++) {
 		for (size_t i = 0; i < all_paths[min_idx].size(); i++) {
