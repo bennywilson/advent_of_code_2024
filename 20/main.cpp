@@ -198,14 +198,6 @@ uint64_t find_path(const Vec2& cur_pos, const Vec2& prev, const Vec2& goal, uint
 		}
 		cheat_indices.insert(cur_idx);
 	}
-	/*else if (prev.valid() && g_board[prev.index()] == '#') {
-		if (cheat_indices.size() < 1 && !std_contains(cheat_indices, cur_idx)) {
-			cheat_indices.insert(cur_idx);
-		} else {
-			return 0;
-		}
-
-	}*/
 
 	const Vec2 dirs[] = {
 		Vec2(1, 0),
@@ -295,11 +287,16 @@ void part_one() {
 		}
 	}
 
+	uint64_t num_over_hundred = 0;
 	for (int i = 0; i < all_paths.size(); i++) {
-		path_info[max_val - (max_val - all_paths[i].size())]++;
+		uint64_t savings = (max_val - all_paths[i].size());
+		path_info[savings]++;
+		if (savings >= 100) {
+			num_over_hundred++;
+		}
 	}
 
-
+/*
 	unordered_set<uint64_t> touched_cells;
 	print_board(false, start, end, touched_cells);
 	for (int i = 0; i < all_paths.size(); i++) {
@@ -322,83 +319,12 @@ void part_one() {
 		}
 
 	}
-//	min_idx = 45;
+*/
 
-//	unordered_set<uint64_t> visited;
-	vector<uint64_t>& the_path = all_paths[min_idx];
-	/*for (int l = 1; l < the_path.size(); l++) {
-		for (size_t i = 0; i < all_paths[min_idx].size(); i++) {
-
-			for (size_t j = 0; j < l; j++) {
-				visited.insert(the_path[j]);
-			}
-		}
-
-		print_board(true, start, end, visited);
-		getchar();
-	}*/
 	for (const auto &it: path_info) {
 		cout << "There are " << it.second << " cheats that save " << max_val - it.first << " picoseconds." << endl;
 	}
-cout << "Min dist = " << min_val << endl;
-	/*queue<Key> q;
-	q.push(Key(start.index(), 0, INT64_MAX));
-	unordered_map<uint64_t, Key> visited;
-
-	int64_t steps_to_goal = -1;
-
-	while (!q.empty()) {
-		const Key cur_key = q.front();
-		const uint64_t cur_idx = cur_key.idx;
-
-		q.pop();
-
-		const Vec2 cur_pos(cur_idx);
-		if (visited.find(cur_idx) != visited.end()) {
-			continue;
-		}
-
-		visited[cur_idx] = cur_key;
-
-		if (cur_pos.x == end.x && cur_pos.y == end.y) {
-			steps_to_goal = cur_key.steps;
-			break;
-		}
-
-		uint64_t cur_cheat_idx = cur_key.cheat_idx;
-		if (g_board[cur_pos.index()] == '#') {
-			if (cur_cheat_idx == UINT64_MAX) {
-				cur_cheat_idx = cur_pos.index();
-			} else {
-				continue;
-			}
-		}
-
-		const uint64_t next_steps = cur_key.steps + 1;
-		const Vec2 left = cur_pos + Vec2(-1, 0);
-		if (left.valid()) {
-			q.push(Key(left.index(), next_steps, cur_idx, cur_cheat_idx));
-		}
-
-		const Vec2 right = cur_pos + Vec2(1, 0);
-		if (right.valid()) {
-			q.push(Key(right.index(), next_steps, cur_idx, cur_cheat_idx));
-		}
-
-		const Vec2 up = cur_pos + Vec2(0, -1);
-		if (up.valid()) {
-			q.push(Key(up.index(), next_steps, cur_idx, cur_cheat_idx));
-		}
-
-		const Vec2 down = cur_pos + Vec2(0, 1);
-		if (down.valid()) {
-			q.push(Key(down.index(), next_steps, cur_idx, cur_cheat_idx));
-		}
-
-	}
-	print_board(false, start, end, visited);
-
-	cout << endl << "Player pos = " << start.x << "," << start.y << " - " << end.x << "," << end.y << endl;*/
+	cout << "There are " << num_over_hundred << " cheats that save at least 100 picoseconds." << endl;
 }
 /**
  *
@@ -407,3 +333,5 @@ int main() {
 	cout << "Part one..........................................................\n";
 	part_one();
 }
+
+// 1441
