@@ -91,10 +91,26 @@ struct Key {
 	bool operator==(const Key& op1) const { return idx == op1.idx; /*&& cheats == op1.cheats;*/ }
 };
 
+struct CheatPair {
+	CheatPair(uint64_t _s, uint64_t _e) : start(_s), end(_e) {}
+	uint64_t	start;
+	uint64_t end;
+
+	bool operator==(const CheatPair& op1) const { return start == op1.start && end == op1.end; }
+};
+
+
 namespace std {
 	template<> struct hash<Key> {
 		size_t operator()(const Key& r) const {
 			size_t res = hash<uint64_t>{}(r.idx);
+			return res;
+		}
+	};
+
+	template<> struct hash<CheatPair> {
+		size_t operator()(const CheatPair& r) const {
+			size_t res = hash<uint64_t>{}(r.start) ^ hash<uint64_t>{}(r.end);
 			return res;
 		}
 	};
@@ -176,26 +192,36 @@ void print_board(const bool clear_console, const Vec2& start_pos, const Vec2& en
 }
 
 unordered_map<Key, uint64_t> visited;
-uint64_t find_path(const Vec2& cur_pos, const Vec2& prev, const Vec2& goal, uint64_t cur_cost, unordered_set<uint64_t>& cheat_indices, vector<uint64_t>& cur_path, vector<vector<uint64_t>>& all_paths) {
+unordered_set<CheatPair> cheats;
+void find_path(const Vec2& cur_pos, const Vec2& prev, const Vec2& goal, uint64_t cur_cost, Vec2& cheat_start, unordered_set<uint64_t>& cheat_indices, vector<uint64_t>& cur_path, vector<vector<uint64_t>>& all_paths) {
 	if (!cur_pos.valid()) {
-		return 0;
+		return;
 	}
 
 	if (cur_pos == goal) {
 		all_paths.push_back(cur_path);
-		return 1;
+		return;
 	}
+
+	const uint64_t max_cheats = 1;
 
 	Key cur_key(cur_pos.index(), prev.index(), cur_cost);
 	uint64_t cur_idx = cur_pos.index();
 	if (std_contains(visited, cur_key)) {
-		return 0;
+		return;
 	}
 
+	visited[cur_key] = cur_cost;
 	if (g_board[cur_pos.index()] == '#') {
-		if (cheat_indices.size() == 1 || std_contains(cheat_indices, cur_idx)) {
-			return 0;
+		if (cheat_indices.size() == max_cheats) {
+			visited.erase(cur_key);
+			return;
 		}
+		if (cheat_indices.size() == 0) {
+			cheat_start = cur_pos;
+		}
+	}
+	if (cheat_start.valid() && cheat_indices.size() < max_cheats) {
 		cheat_indices.insert(cur_idx);
 	}
 
@@ -207,29 +233,23 @@ uint64_t find_path(const Vec2& cur_pos, const Vec2& prev, const Vec2& goal, uint
 	};
 
 	uint64_t path_count = 0;
-	if (std_contains(cur_path, cur_pos.index())) {
-		static int how = 0;
-		how++;
-	}
 	cur_path.push_back(cur_pos.index());
 
-	visited[cur_key] = cur_cost;
 	for (int i = 0; i < 4; i++) {
 		const Vec2 next_pos = cur_pos + dirs[i];
 		if (next_pos == prev) {
 			continue;
 		}
 
-		path_count += find_path(next_pos, cur_pos, goal, cur_cost + 1, cheat_indices, cur_path, all_paths);
+		find_path(next_pos, cur_pos, goal, cur_cost + 1, cheat_start, cheat_indices, cur_path, all_paths);
 	}
 	cur_path.pop_back();
 	cheat_indices.erase(cur_pos.index());
 	visited.erase(cur_key);
-
-	if (path_count > 0) {
-		return path_count + 1;
+	if (cheat_indices.size() == 0) {
+		cheat_start = Vec2(-1, -1);
 	}
-	return 0;	
+	return;	
 }
 
 void part_one() {
@@ -267,8 +287,8 @@ void part_one() {
 
 	vector<uint64_t> cur_path;
 	vector<vector<uint64_t>> all_paths;
-
-	find_path(start, Vec2(-1, -1), end, 0, cheat_indices, cur_path, all_paths);
+	Vec2 cheat_start(-1, -1);
+	find_path(start, Vec2(-1, -1), end, 0, cheat_start, cheat_indices, cur_path, all_paths);
 
 	uint64_t min_val = UINT64_MAX;
 	uint64_t min_idx = INT_MAX;
@@ -288,17 +308,34 @@ void part_one() {
 	}
 
 	uint64_t num_over_hundred = 0;
+	unordered_set<uint64_t> fiffy;
+	uint64_t num_good = 0;
 	for (int i = 0; i < all_paths.size(); i++) {
 		uint64_t savings = (max_val - all_paths[i].size());
 		path_info[savings]++;
 		if (savings >= 100) {
 			num_over_hundred++;
+			if (fiffy.empty()) {
+				for (int l = 0; l < all_paths[i].size(); l++) {
+					fiffy.insert(all_paths[i][l]);
+				}
+			}
+			else {
+				bool all_good = true;
+				for (int l = 0; l < all_paths[i].size(); l++) {
+					if (std_contains(fiffy, all_paths[i][l]) == false) {
+						all_good = false;
+					}
+				}
+				if (all_good) num_good ++;
+			}
 		}
 	}
+		
 
-/*
+	int num_printed = 0;
 	unordered_set<uint64_t> touched_cells;
-	print_board(false, start, end, touched_cells);
+	//print_board(false, start, end, touched_cells);
 	for (int i = 0; i < all_paths.size(); i++) {
 		vector<uint64_t>& cur_path = all_paths[i];
 		for (int k = 0; k < cur_path.size(); k++) {
@@ -315,16 +352,17 @@ void part_one() {
 				touched_cells.insert(cur_path[j]);
 				
 			}
-			print_board(false, start, end, touched_cells);
+		//	print_board(false, start, end, touched_cells);
+			num_printed++;
 		}
 
 	}
-*/
+
 
 	for (const auto &it: path_info) {
-		cout << "There are " << it.second << " cheats that save " << max_val - it.first << " picoseconds." << endl;
+		cout << "There are " << it.second << " cheats that save " << it.first << " picoseconds." << endl;
 	}
-	cout << "There are " << num_over_hundred << " cheats that save at least 100 picoseconds." << endl;
+	cout << "There are " << num_over_hundred << " cheats that save at least 100 picoseconds." << " " << num_printed << endl;
 }
 /**
  *
