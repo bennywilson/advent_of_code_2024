@@ -5,6 +5,11 @@
 #include <unordered_set>
 #include <sstream>
 #include <queue>
+#include <fcntl.h>
+
+#include <io.h>
+#include <stdio.h>
+#include <windows.h>
 
 using namespace std;
 using namespace std::chrono;
@@ -72,29 +77,24 @@ struct Vec2 {
 
 
 struct Key {
-	Key() : idx(UINT64_MAX), steps(0), prev(UINT64_MAX) {}
+	Key() : idx(UINT64_MAX),prev(UINT64_MAX), cost(UINT64_MAX) {}
 
-	Key(uint64_t _idx, const uint64_t _steps, const uint64_t _prev, const unordered_set<uint64_t>* _cheats = nullptr) :
+	Key(uint64_t _idx, const uint64_t _prev, const uint64_t _cost) :
 		idx(_idx),
-		steps(_steps),
-		prev(_prev) {
-			if (_cheats) {
-				cheats = *_cheats;
-			}
-		}
+		prev(_prev),
+		cost(_cost) {}
 
 	uint64_t idx;
-	uint64_t steps;
 	uint64_t prev;
-	unordered_set<uint64_t> cheats;
+	uint64_t cost;
 
-	bool operator==(const Key& op1) const { return idx == op1.idx && cheats == op1.cheats; }
+	bool operator==(const Key& op1) const { return idx == op1.idx; /*&& cheats == op1.cheats;*/ }
 };
 
 namespace std {
 	template<> struct hash<Key> {
 		size_t operator()(const Key& r) const {
-			size_t res = hash<uint64_t>{}(r.idx) ^ hash<size_t>{}(r.cheats.size());
+			size_t res = hash<uint64_t>{}(r.idx);
 			return res;
 		}
 	};
@@ -102,8 +102,8 @@ namespace std {
 
 
 void print_board(const bool clear_console, const Vec2& start_pos, const Vec2& end_pos, unordered_set<uint64_t>& visited) {
-/*
-	_setmode(_fileno(stdout), _O_U16TEXT);
+
+	//_setmode(_fileno(stdout), _O_U16TEXT);
 
 	if (clear_console) {
 		//	SetConsoleOutputCP(1200);
@@ -143,7 +143,7 @@ void print_board(const bool clear_console, const Vec2& start_pos, const Vec2& en
 
 		}
 		SetConsoleMode(hStdOut, originalMode);
-	}*/
+	}
 
 	/*Key backtrack_pos = visited[end_pos.index()];
 	const uint64_t start_idx = start_pos.index();
@@ -156,13 +156,14 @@ void print_board(const bool clear_console, const Vec2& start_pos, const Vec2& en
 		backtrack_pos = visited[backtrack_pos.prev];
 	}*/
 	//cout << "Num steps = " << path_set.size() << endl << endl;
-	
+	int o_count = 0;
 	string the_output;
 	for (int64_t y = 0; y < g_board_height; y++) {
 		for (int64_t x = 0; x < g_board_width; x++) {
 			const uint64_t idx = Vec2(x, y).index();
 			if (std_contains(visited, idx)) {
 				the_output += "O";
+				o_count++;
 			}
 			else {
 				the_output += g_board[idx];
@@ -175,7 +176,7 @@ void print_board(const bool clear_console, const Vec2& start_pos, const Vec2& en
 }
 
 unordered_map<Key, uint64_t> visited;
-uint64_t find_path(const Vec2& cur_pos, const Vec2& prev, const Vec2& goal, int num_steps, unordered_set<uint64_t>& cheat_indices, vector<uint64_t>& cur_path, vector<vector<uint64_t>>& all_paths) {
+uint64_t find_path(const Vec2& cur_pos, const Vec2& prev, const Vec2& goal, uint64_t cur_cost, unordered_set<uint64_t>& cheat_indices, vector<uint64_t>& cur_path, vector<vector<uint64_t>>& all_paths) {
 	if (!cur_pos.valid()) {
 		return 0;
 	}
@@ -184,17 +185,20 @@ uint64_t find_path(const Vec2& cur_pos, const Vec2& prev, const Vec2& goal, int 
 		all_paths.push_back(cur_path);
 		return 1;
 	}
-//	Key(uint64_t _idx, const uint64_t _steps, const uint64_t _prev, const unordered_set<uint64_t>*_cheats = nullptr) :
 
-	Key cur_key(cur_pos.index(), num_steps, prev.index(), &cheat_indices);
+	Key cur_key(cur_pos.index(), prev.index(), cur_cost);
 	uint64_t cur_idx = cur_pos.index();
 	if (std_contains(visited, cur_key)) {
-		return visited[cur_key];
+		return 0;
 	}
 
 	if (g_board[cur_pos.index()] == '#') {
 		if (cheat_indices.size() == 2 || std_contains(cheat_indices, cur_idx)) {
 			return 0;
+		}
+		if (cur_idx == 115) {
+			static int breakhere =0;
+			breakhere++;
 		}
 		cheat_indices.insert(cur_idx);
 	}
@@ -207,7 +211,6 @@ uint64_t find_path(const Vec2& cur_pos, const Vec2& prev, const Vec2& goal, int 
 
 	}
 
-
 	const Vec2 dirs[] = {
 		Vec2(1, 0),
 		Vec2(-1, 0),
@@ -218,16 +221,22 @@ uint64_t find_path(const Vec2& cur_pos, const Vec2& prev, const Vec2& goal, int 
 	uint64_t path_count = 0;
 	cur_path.push_back(cur_pos.index());
 
+	visited[cur_key] = cur_cost;
 	for (int i = 0; i < 4; i++) {
+		if (cur_idx == 115 && g_board[cur_idx] == '#' && all_paths.size() == 45) {
+			static int breakhere = 0;
+			breakhere++;
+		}
 		const Vec2 next_pos = cur_pos + dirs[i];
 		if (next_pos == prev) {
 			continue;
 		}
-		path_count += find_path(next_pos, cur_pos, goal, num_steps + 1, cheat_indices, cur_path, all_paths);
+
+		path_count += find_path(next_pos, cur_pos, goal, cur_cost + 1, cheat_indices, cur_path, all_paths);
 	}
 	cur_path.pop_back();
 	cheat_indices.erase(cur_pos.index());
-	visited[cur_key] = path_count;
+	visited.erase(cur_key);
 
 	if (path_count > 0) {
 		return path_count + 1;
@@ -280,7 +289,7 @@ void part_one() {
 	unordered_map<uint64_t, uint64_t> path_info;
 
 	for (int i = 0; i < all_paths.size(); i++) {
-		uint64_t path_len = all_paths[i].size();
+		uint64_t path_len = all_paths[i].size() - 2;
 		if (path_len < min_val) {
 			min_val = all_paths[i].size();
 			min_idx = i;
@@ -294,17 +303,23 @@ void part_one() {
 		path_info[max_val - (max_val - all_paths[i].size())]++;
 	}
 
-	unordered_set<uint64_t> visited;
-	for (size_t i = 0; i < all_paths[min_idx].size(); i++) {
-		vector<uint64_t>& the_path = all_paths[min_idx];
-		for (size_t j = 0; j < the_path.size(); j++) {
-			visited.insert(the_path[j]);
-		}
-	}
+	min_idx = 45;
 
-	print_board(false, start, end, visited);
+	unordered_set<uint64_t> visited;
+	vector<uint64_t>& the_path = all_paths[min_idx];
+	/*for (int l = 1; l < the_path.size(); l++) {
+		for (size_t i = 0; i < all_paths[min_idx].size(); i++) {
+
+			for (size_t j = 0; j < l; j++) {
+				visited.insert(the_path[j]);
+			}
+		}
+
+		print_board(true, start, end, visited);
+		getchar();
+	}*/
 	for (const auto &it: path_info) {
-		cout << it.first << ": " << it.second << endl;
+		cout << "There are " << it.second << " cheats that save " << max_val - it.first << " picoseconds." << endl;
 	}
 cout << "Min dist = " << min_val << endl;
 	/*queue<Key> q;
