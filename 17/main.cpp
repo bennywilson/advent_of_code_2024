@@ -1,10 +1,8 @@
 #include <chrono>
 #include <fstream>
 #include <iostream>
-#include <unordered_map>
 #include <unordered_set>
 #include <sstream>
-#include <queue>
 
 using namespace std;
 using namespace std::chrono;
@@ -90,62 +88,34 @@ void part_one() {
 
 		switch (cmd) {
 			// adv
-		case 0: {
-			const uint64_t numerator = a;
-			const uint64_t denominator = (uint64_t)pow(2, combo_op);
-			a = numerator / denominator;
-			break;
-		}
+		case 0: { a >>= combo_op; break; }
 
-			  // bxl
-		case 1: {
-			b ^= op;
-			break;
-		}
+			// bxl
+			case 1: { b ^= op; break; }
 
-			  // bst
-		case 2: {
-			b = combo_op % 8;
-			break;
-		}
+			// bst
+			case 2: { b = combo_op % 8; break; }
 
-			  // jnz
-		case 3: {
-			if (a != 0) {
-				i = op;
-				jmped = true;
+			// jnz
+			case 3: {
+				if (a != 0) {
+					i = op;
+					jmped = true;
+				}
+				break;
 			}
-			break;
-		}
 
-			  // bxc
-		case 4: {
-			b ^= c;
-			break;
-		}
+			// bxc
+			case 4: { b ^= c; break; }
 
-			  // out
-		case 5: {
-			const uint64_t out = combo_op % 8;
-			outputs.push_back(out);
-			break;
-		}
+			// out
+			case 5: { outputs.push_back(combo_op % 8); break; }
 
-			  // bdv
-		case 6: {
-			const uint64_t numerator = a;
-			const uint64_t denominator = (uint64_t)pow(2, combo_op);
-			b = numerator / denominator;
-			break;
-		}
+			// bdv
+			case 6: { b = a >> combo_op; break; }
 
-			  // cdv
-		case 7: {
-			const uint64_t numerator = a;
-			const uint64_t denominator = (uint64_t)pow(2, combo_op);
-			c = numerator / denominator;
-			break;
-		}
+			// cdv
+			case 7: { c = a >> combo_op; break; }
 		}
 
 		if (!jmped) {
@@ -222,7 +192,7 @@ void part_two() {
 
 		for (size_t idx = 0; idx < src_next_a.size(); idx++) {
 			cout << "	idx " << src_next_a[idx] << endl;
-			for (uint64_t check_val = 0; check_val < 7; check_val++) {
+			for (uint64_t check_val = 0; check_val < 8; check_val++) {
 				vector<uint64_t> outputs;
 				a = (src_next_a[idx] << 3) + check_val;
 				cout << "		a = " << a << endl;
@@ -246,7 +216,7 @@ void part_two() {
 					bool jmped = false;
 					switch (cmd) {
 						// adv
-						case 0: { a = a / (uint64_t)pow(2, combo_op); break; }
+						case 0: { a >>= combo_op; break; }
 
 						// bxl
 						case 1: { b ^= op; break; }
@@ -264,10 +234,10 @@ void part_two() {
 						case 5: { outputs.push_back(combo_op % 8); break; }
 
 						// bdv
-						case 6: { b = a / (uint64_t)pow(2, combo_op); break; }
+						case 6: { b = a >> combo_op; break; }
 
 						// cdv
-						case 7: { c = a / (uint64_t)pow(2, combo_op); break; }
+						case 7: { c = a >> combo_op; break; }
 					}
 					if (!jmped) {
 						i += 2;
@@ -295,16 +265,13 @@ void part_two() {
 		if (dst_next_a.size() > 0) {
 			src_next_a.clear();
 		} else {
-			// Got stuck, iteratively search
-			for (size_t i = 0; i < src_next_a.size(); i++) {
-				dst_next_a.push_back(src_next_a[i] + 1);
-			}
-			cur_digit++;
+			cout << "Infinite loop detected!" << endl;
 		}
-		src_next_a.clear();
 	}
+
+	vector<uint64_t>& src_next_a = (next_a_list_1.size() > 0) ? (next_a_list_1) : (next_a_list_2);
+	cout << "Lowest initialization value = " << src_next_a[0];
 }
-// 236548287712877
 
 /**
  *
@@ -320,4 +287,7 @@ int main() {
 
 }
 
-// 6,2,7,2,3,1,6,0,5,
+// 3696066995494
+// 3696066995494 -- Too low
+// 236548287712959
+///236548287712877
