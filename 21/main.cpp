@@ -79,39 +79,37 @@ struct PathNode {
 	PathNode(const Vec2& _pos, const Vec2& prev_pos, const vector<Vec2>& prev_path = vector<Vec2>()) :
 		pos(_pos),
 		path_taken(prev_path) {
-			path_taken.push_back(prev_pos);
+			path_taken.push_back(pos);
 		}
 
 	Vec2	pos;
 	vector<Vec2> path_taken;
 };
 
-/**
- *
- */
-int main() {
-	cout << "Part one..........................................................\n";
-	
+Vec2 get_numpad_pos(const char num) {
+	switch (num) {
+		case '7': return Vec2(0, 0);
+		case '8': return Vec2(1, 0);
+		case '9': return Vec2(2, 0);
+		case '4': return Vec2(0, 1);
+		case '5': return Vec2(1, 1);
+		case '6': return Vec2(2, 1);
+		case '1': return Vec2(0, 2);
+		case '2': return Vec2(1, 2);
+		case '3': return Vec2(2, 2);
+		case '0': return Vec2(1, 3);
+		case 'A': return Vec2(2, 3);
 
-	const string input = "029A";
-/*
-+---+---+---+
-| 7 | 8 | 9 |
-+---+---+---+
-| 4 | 5 | 6 |
-+---+---+---+
-| 1 | 2 | 3 |
-+---+---+---+
-	| 0 | A |
-	+---+---+
-*/
+	}
+}
+
+void find_numpad_paths(const char start_digit, const char end_digit, vector<vector<Vec2>>& all_paths) {
 	const int64_t numpad_width = 3;
 	const int64_t numpad_height = 4;
 	const Vec2 invalid_numpad_pos(0, 3);
 
-	//vector<int64_t> 
-	const Vec2 start_pos(2, 3);
-	const Vec2 end_pos(1, 0);
+	const Vec2 start_pos = get_numpad_pos(start_digit);
+	const Vec2 end_pos = get_numpad_pos(end_digit);
 
 	queue<PathNode> q;
 	q.push(PathNode(start_pos, Vec2(-1, -1)));
@@ -120,11 +118,7 @@ int main() {
 		const PathNode cur_node = q.front();
 		q.pop();
 		if (cur_node.pos == end_pos) {
-			cout << "Found path!" << endl;
-			for (int i = 0; i < cur_node.path_taken.size(); i++) {
-				const Vec2 path_pos = Vec2(cur_node.path_taken[i]);
-				cout << path_pos.x << ", " << path_pos.y << endl;
-			}
+			all_paths.push_back(cur_node.path_taken);
 			continue;
 		}
 
@@ -135,12 +129,43 @@ int main() {
 
 		if (cur_pos.x < end_pos.x && cur_pos.right().valid_numpad_pos()) {
 			q.push(PathNode(cur_pos.right(), cur_pos, cur_node.path_taken));
-		} else if (cur_pos.x > end_pos.x && cur_pos.left().valid_numpad_pos()) {
+		}
+		if (cur_pos.x > end_pos.x && cur_pos.left().valid_numpad_pos()) {
 			q.push(PathNode(cur_pos.left(), cur_pos, cur_node.path_taken));
-		} else if (cur_pos.y < end_pos.y && cur_pos.down().valid_numpad_pos()) {
+		}
+		if (cur_pos.y < end_pos.y && cur_pos.down().valid_numpad_pos()) {
 			q.push(PathNode(cur_pos.down(), cur_pos, cur_node.path_taken));
-		} else if (cur_pos.up().valid_numpad_pos()) {
+		}
+		if (cur_pos.y > end_pos.y && cur_pos.up().valid_numpad_pos()) {
 			q.push(PathNode(cur_pos.up(), cur_pos, cur_node.path_taken));
 		}
 	}
+}
+
+/**
+ *
+ */
+int main() {
+	cout << "Part one..........................................................\n";
+	
+
+	const string input = "029A";
+
+	vector<vector<Vec2>> zero_to_two;
+	find_numpad_paths('0', '2', zero_to_two);
+
+	vector<vector<Vec2>> two_to_nine;
+	find_numpad_paths('2', '9', zero_to_two);
+
+	vector<vector<Vec2>> nine_to_a;
+	find_numpad_paths('9', 'A', nine_to_a);
+
+
+	cout << "Paths between 'A' and '8':" << endl;
+/*	for (const auto& path: all_paths) {
+		for (const auto& node: path) {
+			cout << "[" << node.x << ", " << node.y << "] ";
+		}
+		cout << endl;
+	}*/
 }
