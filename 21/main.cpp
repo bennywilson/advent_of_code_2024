@@ -154,7 +154,8 @@ void create_complete_paths(const PathsToDigit& button1, const PathsToDigit& butt
 		for (int j = 0; j < button2.size(); j++) {
 			const Path& button2_path = button2[j];
 			Path button1_to_button2_path = button1_path;
-			button1_to_button2_path.insert(button1_to_button2_path.end(), button2_path.begin() + 1, button2_path.end());
+			button1_to_button2_path.insert(button1_to_button2_path.end(), button2_path.begin(), button2_path.end());
+			button1_to_button2_path[button1_path.size()] = Vec2(-1, -1);	// Indicates button press
 			out.push_back(button1_to_button2_path);
 		}
 	}
@@ -165,10 +166,35 @@ void create_complete_paths(const PathsToDigit& button1, const PathsToDigit& butt
 		for (int j = 0; j < button3.size(); j++) {
 			const Path& button3_path = button3[j];
 			Path button1_to_button3_path = button1_2_path;
-			button1_to_button3_path.insert(button1_to_button3_path.end(), button3_path.begin() + 1, button3_path.end());
+			button1_to_button3_path.insert(button1_to_button3_path.end(), button3_path.begin(), button3_path.end());
+			button1_to_button3_path[button1_2_path.size()] = Vec2(-1, -1);	// Indicates button press
 			out_2.push_back(button1_to_button3_path);
 		}
 	}
+
+	vector<string> sequences;
+	for (int i = 0; i < out_2.size(); i++) {
+		Path& cur_path = out_2[i];
+		string new_sequence;
+		for (int j = 1; j < cur_path.size(); j++) {
+			const Vec2& cur_pos = cur_path[j];
+			const Vec2& prev_pos = cur_path[(size_t)j - 1];
+			if (cur_pos.x < 0) {
+				new_sequence.push_back('A');
+			} else if (cur_pos.x > prev_pos.x) {
+				new_sequence.push_back('<');
+			} else if (cur_pos.x > prev_pos.x) {
+				new_sequence.push_back('>');
+			} else if (cur_pos.y > prev_pos.y) {
+				new_sequence.push_back('v');
+			} else {
+				new_sequence.push_back('^');
+			}
+		}
+
+		sequences.push_back(new_sequence);
+	}
+
 	static int breakhere = 0;
 	breakhere++;
 }
