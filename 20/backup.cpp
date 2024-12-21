@@ -19,7 +19,7 @@ int64_t g_board_width = 0;
 int64_t g_board_height = 0;
 string g_board;
 
-template<typename V, typename T>
+template<typename V,typename T>
 bool std_contains(const vector<V>& vec, const T& value) {
 	return std::find(vec.begin(), vec.end(), value) != vec.end();
 }
@@ -38,7 +38,7 @@ struct Vec2 {
 		x(in_x),
 		y(in_y) {}
 
-	Vec2(const int64_t idx) {
+	Vec2(const uint64_t idx) {
 		x = idx % g_board_width;
 		y = idx / g_board_width;
 	}
@@ -67,12 +67,8 @@ struct Vec2 {
 		return x >= 0 && x < g_board_width && y >= 0 && y < g_board_height;
 	}
 
-	int64_t index() const {
-		if (valid()) {
-			return x + y * g_board_width;
-		} else {
-			return -1;
-		}
+	uint64_t index() const {
+		return x + y * g_board_width;
 	}
 
 	int64_t x;
@@ -80,7 +76,48 @@ struct Vec2 {
 };
 
 
-void print_board(const bool clear_console, const Vec2& start_pos, const Vec2& end_pos, unordered_map<int64_t, int64_t>& distances) {
+struct Key {
+	Key() : idx(UINT64_MAX),prev(UINT64_MAX), cost(UINT64_MAX) {}
+
+	Key(uint64_t _idx, const uint64_t _prev, const uint64_t _cost) :
+		idx(_idx),
+		prev(_prev),
+		cost(_cost) {}
+
+	uint64_t idx;
+	uint64_t prev;
+	uint64_t cost;
+
+	bool operator==(const Key& op1) const { return idx == op1.idx; /*&& cheats == op1.cheats;*/ }
+};
+
+struct CheatPair {
+	CheatPair(uint64_t _s, uint64_t _e) : start(_s), end(_e) {}
+	uint64_t	start;
+	uint64_t end;
+
+	bool operator==(const CheatPair& op1) const { return start == op1.start && end == op1.end; }
+};
+
+
+namespace std {
+	template<> struct hash<Key> {
+		size_t operator()(const Key& r) const {
+			size_t res = hash<uint64_t>{}(r.idx);
+			return res;
+		}
+	};
+
+	template<> struct hash<CheatPair> {
+		size_t operator()(const CheatPair& r) const {
+			size_t res = hash<uint64_t>{}(r.start) ^ hash<uint64_t>{}(r.end);
+			return res;
+		}
+	};
+};
+
+
+void print_board(const bool clear_console, const Vec2& start_pos, const Vec2& end_pos, unordered_map<uint64_t, uint64_t>& distances) {
 
 	//_setmode(_fileno(stdout), _O_U16TEXT);
 
@@ -137,17 +174,16 @@ void print_board(const bool clear_console, const Vec2& start_pos, const Vec2& en
 	//cout << "Num steps = " << path_set.size() << endl << endl;
 	int o_count = 0;
 	string the_output;
-	//cout.precision(2);
-	//auto new_str = std::string(n_zero - std::min(n_zero, old_str.length()), '0') + old_str;
+//cout.precision(2);
+//auto new_str = std::string(n_zero - std::min(n_zero, old_str.length()), '0') + old_str;
 	for (int64_t y = 0; y < g_board_height; y++) {
 		for (int64_t x = 0; x < g_board_width; x++) {
-			const int64_t idx = Vec2(x, y).index();
+			const uint64_t idx = Vec2(x, y).index();
 			if (std_contains(distances, idx)) {
 				if (distances[idx] < 10) {
 					the_output += '/';
 					the_output += std::to_string(distances[idx]);
-				}
-				else {
+				} else {
 					the_output += std::to_string(distances[idx]);
 				}
 				o_count++;
@@ -163,21 +199,22 @@ void print_board(const bool clear_console, const Vec2& start_pos, const Vec2& en
 	//	printf("%s", the_output.c_str());		
 }
 
-int64_t find_distances(const Vec2& cur_pos, const Vec2& prev, const Vec2& goal, const int64_t cur_steps, unordered_map<int64_t, int64_t>& distances) {
+uint64_t find_distances(const Vec2& cur_pos, const Vec2& prev, const Vec2& goal, const uint64_t cur_steps, unordered_map<uint64_t, uint64_t>& distances) {
 	if (!cur_pos.valid()) {
-		return INT64_MAX;
+		return UINT64_MAX;
 	}
 
 	if (g_board[cur_pos.index()] == '#') {
-		return INT64_MAX;;
+		return UINT64_MAX;;
 	}
 
-	const int64_t cur_idx = cur_pos.index();
+	const uint64_t cur_idx = cur_pos.index();
 	distances[cur_idx] = cur_steps;
 
 	if (cur_pos == goal) {
 		return 1;
 	}
+
 
 	const Vec2 dirs[] = {
 		Vec2(1, 0),
@@ -186,7 +223,7 @@ int64_t find_distances(const Vec2& cur_pos, const Vec2& prev, const Vec2& goal, 
 		Vec2(0, -1)
 	};
 
-	int64_t dist = INT64_MAX;
+	uint64_t dist = UINT64_MAX;
 
 	for (int i = 0; i < 4; i++) {
 		const Vec2 next_pos = cur_pos + dirs[i];
@@ -196,80 +233,13 @@ int64_t find_distances(const Vec2& cur_pos, const Vec2& prev, const Vec2& goal, 
 
 		if (next_pos.valid()) {
 			dist = find_distances(next_pos, cur_pos, goal, cur_steps + 1, distances);
-			if (dist != INT64_MAX) {
+			if (dist != UINT64_MAX) {
 				break;
 			}
 		}
-	}
 
+	}
 	return dist + 1;
-}
-
-bool find_shorter_routes(int64_t& short_cuts, const Vec2& cur_pos, const Vec2& prev, const Vec2& goal, const int64_t target_distance, const int64_t cheat_size, unordered_map<int64_t, int64_t>& distances) {
-	if (!cur_pos.valid()) {
-		return false;
-	}
-
-	if (g_board[cur_pos.index()] == '#') {
-		return false;
-	}
-
-	const int64_t cur_idx = cur_pos.index();
-
-	if (cur_pos == goal) {
-		return true;
-	}
-
-	const int64_t top = cur_pos.y - cheat_size;
-	const int64_t bottom = cur_pos.y + cheat_size;
-	const int64_t left = cur_pos.x - cheat_size;
-	const int64_t right = cur_pos.x + cheat_size;
-
-	Vec2 dest_pos = Vec2(left, top);
-	for (dest_pos.y = top; dest_pos.y <= bottom; dest_pos.y++) {
-		for (dest_pos.x = left; dest_pos.x <= right; dest_pos.x++) {
-			const int64_t dst_idx = dest_pos.index();
-			if (!std_contains(distances, dst_idx)) {
-				continue;
-			}
-
-			const int64_t manhattan_distance = abs(dest_pos.x - cur_pos.x) + abs(dest_pos.y - cur_pos.y);
-			if (manhattan_distance > cheat_size) {
-				continue;
-			}
-
-			const int64_t start_to_cur = distances[cur_pos.index()];
-			const int64_t start_to_dest = distances[dest_pos.index()];
-			const int64_t distance_saved = start_to_dest - (start_to_cur + manhattan_distance);
-			if (distance_saved >= target_distance) {
-				short_cuts++;
-			}			
-		}
-	}
-
-	const Vec2 dirs[] = {
-		Vec2(1, 0),
-		Vec2(-1, 0),
-		Vec2(0, 1),
-		Vec2(0, -1)
-	};
-
-	bool route_found = false;
-	for (int i = 0; i < 4; i++) {
-		const Vec2 next_pos = cur_pos + dirs[i];
-		if (next_pos == prev) {
-			continue;
-		}
-
-		if (next_pos.valid()) {
-			route_found = find_shorter_routes(short_cuts, next_pos, cur_pos, goal, target_distance, cheat_size, distances);
-			if (route_found) {
-				break;
-			}
-		}
-	}
-
-	return route_found;
 }
 
 void part_one() {
@@ -294,29 +264,26 @@ void part_one() {
 				start = Vec2(s + g_board_height * g_board_width);
 			}
 		}
-
 		if (!end.valid()) {
 			const size_t g = line.find('E');
 			if (g != line.npos) {
 				end = Vec2(g + g_board_height * g_board_width);
 			}
 		}
-
 		g_board_height++;
 	}
 
-	unordered_map<int64_t, int64_t> distances;
+	unordered_map<uint64_t, uint64_t> distances;
+
 	find_distances(start, Vec2(-1, -1), end, 0, distances);
 
-
-	int64_t short_cuts = 0;
-	find_shorter_routes(short_cuts, start, Vec2(-1, -1), end, 100, 20, distances);
-
 	print_board(false, start, end, distances);
-	cout << "Num short cuts = " << short_cuts << endl;
+
+/*	for (const auto &it: path_info) {
+		cout << "There are " << it.second << " cheats that save " << it.first << " picoseconds." << endl;
+	}
+	cout << "There are " << num_over_hundred << " cheats that save at least 100 picoseconds." << " " << num_printed << endl;*/
 }
-
-
 /**
  *
  */
@@ -324,3 +291,5 @@ int main() {
 	cout << "Part one..........................................................\n";
 	part_one();
 }
+
+// 1441
