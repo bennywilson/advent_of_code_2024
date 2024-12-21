@@ -1,4 +1,5 @@
-﻿#include <chrono>
+﻿#include <assert.h>
+#include <chrono>
 #include <fstream>
 #include <iostream>
 #include <unordered_map>
@@ -15,9 +16,7 @@ using namespace std;
 using namespace std::chrono;
 
 bool g_log = false;
-int64_t g_board_width = 0;
-int64_t g_board_height = 0;
-string g_board;
+
 
 template<typename V, typename T>
 bool std_contains(const vector<V>& vec, const T& value) {
@@ -74,6 +73,9 @@ struct Vec2 {
 	int64_t y;
 };
 
+typedef vector<Vec2> Path;
+typedef vector<Path> PathsToDigit;
+
 struct PathNode {
 	PathNode() : pos(-1, -1) {}
 	PathNode(const Vec2& _pos, const Vec2& prev_pos, const vector<Vec2>& prev_path = vector<Vec2>()) :
@@ -83,7 +85,7 @@ struct PathNode {
 		}
 
 	Vec2	pos;
-	vector<Vec2> path_taken;
+	Path path_taken;
 };
 
 Vec2 get_numpad_pos(const char num) {
@@ -99,11 +101,13 @@ Vec2 get_numpad_pos(const char num) {
 		case '3': return Vec2(2, 2);
 		case '0': return Vec2(1, 3);
 		case 'A': return Vec2(2, 3);
-
 	}
+
+	assert(0);
+	return Vec2(-1, -1);
 }
 
-void find_numpad_paths(const char start_digit, const char end_digit, vector<vector<Vec2>>& all_paths) {
+void find_numpad_paths(const char start_digit, const char end_digit, PathsToDigit& all_paths_to_digits) {
 	const int64_t numpad_width = 3;
 	const int64_t numpad_height = 4;
 	const Vec2 invalid_numpad_pos(0, 3);
@@ -118,7 +122,7 @@ void find_numpad_paths(const char start_digit, const char end_digit, vector<vect
 		const PathNode cur_node = q.front();
 		q.pop();
 		if (cur_node.pos == end_pos) {
-			all_paths.push_back(cur_node.path_taken);
+			all_paths_to_digits.push_back(cur_node.path_taken);
 			continue;
 		}
 
@@ -142,6 +146,33 @@ void find_numpad_paths(const char start_digit, const char end_digit, vector<vect
 	}
 }
 
+void create_complete_paths(const PathsToDigit& button1, const PathsToDigit& button2, const PathsToDigit& button3) {
+	
+	PathsToDigit out;
+	for (int i = 0; i < button1.size(); i++) {
+		const Path& button1_path = button1[i];
+		for (int j = 0; j < button2.size(); j++) {
+			const Path& button2_path = button2[j];
+			Path button1_to_button2_path = button1_path;
+			button1_to_button2_path.insert(button1_to_button2_path.end(), button2_path.begin() + 1, button2_path.end());
+			out.push_back(button1_to_button2_path);
+		}
+	}
+
+	PathsToDigit out_2;
+	for (int i = 0; i < out.size(); i++) {
+		const Path& button1_2_path = out[i];
+		for (int j = 0; j < button3.size(); j++) {
+			const Path& button3_path = button3[j];
+			Path button1_to_button3_path = button1_2_path;
+			button1_to_button3_path.insert(button1_to_button3_path.end(), button3_path.begin() + 1, button3_path.end());
+			out_2.push_back(button1_to_button3_path);
+		}
+	}
+	static int breakhere = 0;
+	breakhere++;
+}
+
 /**
  *
  */
@@ -151,18 +182,26 @@ int main() {
 
 	const string input = "029A";
 
-	vector<vector<Vec2>> zero_to_two;
+	PathsToDigit zero_to_two;
 	find_numpad_paths('0', '2', zero_to_two);
 
-	vector<vector<Vec2>> two_to_nine;
-	find_numpad_paths('2', '9', zero_to_two);
+	PathsToDigit two_to_nine;
+	find_numpad_paths('2', '9', two_to_nine);
 
-	vector<vector<Vec2>> nine_to_a;
+	PathsToDigit nine_to_a;
 	find_numpad_paths('9', 'A', nine_to_a);
 
+	const vector<vector<Vec2>> paths[] = {
+		zero_to_two,
+		two_to_nine,
+		nine_to_a
+	};
 
-	cout << "Paths between 'A' and '8':" << endl;
-/*	for (const auto& path: all_paths) {
+	vector<vector<Vec2>> complete_paths;
+	create_complete_paths(zero_to_two, two_to_nine, nine_to_a);
+
+	/*cout << "Paths between 'A' and '8':" << endl;
+	for (const auto& path: all_paths) {
 		for (const auto& node: path) {
 			cout << "[" << node.x << ", " << node.y << "] ";
 		}
