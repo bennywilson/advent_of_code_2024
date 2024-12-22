@@ -300,7 +300,7 @@ void finalize_arrowpad(vector<PathLists>& path_lists, vector<string>& sequences)
 	}
 }
 
-void process_arrowpad(const vector<string>& in, vector<string>& out) {
+void process_arrowpad(const vector<string>& in, vector<string>& out, const bool trim) {
 
 	for (size_t i = 0; i < in.size(); i++) {
 		const string& cur_sequence = in[i];
@@ -318,24 +318,25 @@ void process_arrowpad(const vector<string>& in, vector<string>& out) {
 		finalize_arrowpad(path_lists, out);
 	}
 	
-	// Only keep the shortest paths
-	size_t min_len = SIZE_MAX;
-	for (size_t i = 0; i < out.size(); i++) {
-		if (out[i].size() < min_len) {
-			min_len = out[i].size();
+	if (trim) {
+		// Only keep the shortest paths
+		size_t min_len = SIZE_MAX;
+		for (size_t i = 0; i < out.size(); i++) {
+			if (out[i].size() < min_len) {
+				min_len = out[i].size();
+			}
 		}
-	}
-	auto it = out.begin();
-	while (it != out.end()) {
+		auto it = out.begin();
+		while (it != out.end()) {
 	
-		if (it->size() > min_len) {
-			it = out.erase(it);
+			if (it->size() > min_len) {
+				it = out.erase(it);
+			}
+			else {
+				++it;
+			}
 		}
-		else {
-			++it;
-		}
-	}
-	
+	}	
 }
 
 void part_one() {
@@ -372,11 +373,11 @@ void part_one() {
 		}
 
 		vector<string> robot_2_output;
-		process_arrowpad(robot_1_output, robot_2_output);
+		process_arrowpad(robot_1_output, robot_2_output, true);
 
 		vector<string> robot_3_output;
-		process_arrowpad(robot_2_output, robot_3_output);
-	
+		process_arrowpad(robot_2_output, robot_3_output, false);
+
 		int64_t min_val = INT64_MAX;
 		for (int l = 0; l < robot_3_output.size(); l++) {
 			if (robot_3_output[l].size() < min_val) {
