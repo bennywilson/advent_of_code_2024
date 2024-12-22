@@ -356,7 +356,7 @@ void part_one() {
 	for (int input_idx = 0; input_idx < 5; input_idx++) {
 		const string& input = inputs[input_idx];
 
-		vector<string> robot_1_output;
+		vector<string> list_1, list_2;
 		{
 			PathLists path_lists;
 			find_numpad_paths('A', input[0], path_lists);
@@ -367,19 +367,32 @@ void part_one() {
 				find_numpad_paths(input[i], input[i + 1], path_lists);
 				all_path_lists.push_back(path_lists);
 			}
-			finalize_numpad(all_path_lists, robot_1_output);
+			finalize_numpad(all_path_lists, list_1);
 		}
 
-		vector<string> robot_2_output;
-		process_arrowpad(robot_1_output, robot_2_output, true);
 
-		vector<string> robot_3_output;
-		process_arrowpad(robot_2_output, robot_3_output, false);
+
+
+		for (int i = 0; i < 2; i++) {
+			vector<string>& src = (list_1.size() > 0)?(list_1):(list_2);
+			vector<string>& dst = (list_1.size() > 0) ? (list_2) : (list_1);
+
+			process_arrowpad(src, dst, i < 1);
+			src.clear();
+
+		}
+
+	//	vector<string> robot_2_output;
+	//	process_arrowpad(robot_1_output, robot_2_output, true);
+
+	//	vector<string> robot_3_output;
+	//	process_arrowpad(robot_2_output, robot_3_output, false);
 
 		int64_t min_val = INT64_MAX;
-		for (int l = 0; l < robot_3_output.size(); l++) {
-			if (robot_3_output[l].size() < min_val) {
-				min_val = robot_3_output[l].size();
+		vector<string>& src = (list_1.size() > 0) ? (list_1) : (list_2);
+		for (int l = 0; l < src.size(); l++) {
+			if (src[l].size() < min_val) {
+				min_val = src[l].size();
 			}
 		}
 		const int64_t input_as_number = std::atoi(input.substr(0, 3).c_str());
