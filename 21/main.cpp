@@ -300,7 +300,45 @@ void finalize_arrowpad(vector<PathLists>& path_lists, vector<string>& sequences)
 	}
 }
 
-int part_one() {
+void process_arrowpad(const vector<string>& in, vector<string>& out) {
+
+	for (size_t i = 0; i < in.size(); i++) {
+		const string& cur_sequence = in[i];
+	
+		PathLists arrowpad_pathlists;
+		find_arrowpad_paths('A', cur_sequence[0], arrowpad_pathlists);
+		vector<PathLists> path_lists = { arrowpad_pathlists };
+	
+		for (size_t i = 0; i < cur_sequence.size() - 1; i++) { // Skip \0 at end
+			PathLists arrowpad_pathlists;
+			find_arrowpad_paths(cur_sequence[i], cur_sequence[i + 1], arrowpad_pathlists);
+			path_lists.push_back(arrowpad_pathlists);
+		}
+	
+		finalize_arrowpad(path_lists, out);
+	}
+	
+	// Only keep the shortest paths
+	size_t min_len = SIZE_MAX;
+	for (size_t i = 0; i < out.size(); i++) {
+		if (out[i].size() < min_len) {
+			min_len = out[i].size();
+		}
+	}
+	auto it = out.begin();
+	while (it != out.end()) {
+	
+		if (it->size() > min_len) {
+			it = out.erase(it);
+		}
+		else {
+			++it;
+		}
+	}
+	
+}
+
+void part_one() {
 	/*	const string inputs[] = {
 			"029A",
 			"980A",
@@ -334,77 +372,11 @@ int part_one() {
 		}
 
 		vector<string> robot_2_output;
-		{
-			for (size_t i = 0; i < robot_1_output.size(); i++) {
-				const string& cur_sequence = robot_1_output[i];
-
-				PathLists arrowpad_pathlists;
-				find_arrowpad_paths('A', cur_sequence[0], arrowpad_pathlists);
-				vector<PathLists> path_lists = { arrowpad_pathlists };
-
-				for (size_t i = 0; i < cur_sequence.size() - 1; i++) { // Skip \0 at end
-					PathLists arrowpad_pathlists;
-					find_arrowpad_paths(cur_sequence[i], cur_sequence[i + 1], arrowpad_pathlists);
-					path_lists.push_back(arrowpad_pathlists);
-				}
-
-				finalize_arrowpad(path_lists, robot_2_output);
-			}
-
-			// Only keep the shortest paths
-			size_t min_len = SIZE_MAX;
-			for (auto it : robot_2_output) {
-				if (it.size() < min_len) {
-					min_len = it.size();
-				}
-			}
-			auto it = robot_2_output.begin();
-			while (it != robot_2_output.end()) {
-
-				if (it->size() > min_len) {
-					it = robot_2_output.erase(it);
-				}
-				else {
-					++it;
-				}
-			}
-		}
+		process_arrowpad(robot_1_output, robot_2_output);
 
 		vector<string> robot_3_output;
-		{
-		/*	int64_t smallest_robot_2 = MAXINT;
-			int64_t smallest_idx;
-			for (int i = 0; i < robot_2_output.size(); i++) {
-				if (robot_2_output[i].find("<vA<AA>>^AvAA<^A>A<v<A>>") != robot_2_output[i].npos) {
-					static int we = 0; we++;
-				}
-				if ((int64_t)robot_2_output[i].size() < smallest_robot_2) {
-					smallest_robot_2 = robot_2_output[i].size();
-					smallest_idx = i;
-				}
-			}*/
-
-			for (int i = 0; i < robot_2_output.size(); i++) {
-				/*if (robot_2_output[i].size() != smallest_robot_2) {
-					continue;
-				}*/
-				vector<PathLists> path_lists;
-
-				const string& cur_sequence = robot_2_output[i];
-				PathLists arrowpad_pathlists;
-				find_arrowpad_paths('A', cur_sequence[0], arrowpad_pathlists);
-				path_lists.push_back(arrowpad_pathlists);
-
-				for (int i = 0; i < cur_sequence.size() - 1; i++) { // Skip \0 at end
-					arrowpad_pathlists.clear();
-					find_arrowpad_paths(cur_sequence[i], cur_sequence[i + 1], arrowpad_pathlists);
-					path_lists.push_back(arrowpad_pathlists);
-				}
-
-				finalize_arrowpad(path_lists, robot_3_output);
-			}
-		} // Robot 3
-
+		process_arrowpad(robot_2_output, robot_3_output);
+	
 		int64_t min_val = INT64_MAX;
 		for (int l = 0; l < robot_3_output.size(); l++) {
 			if (robot_3_output[l].size() < min_val) {
