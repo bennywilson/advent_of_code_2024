@@ -305,14 +305,20 @@ void finalize_arrowpad(vector<PathLists>& path_lists, vector<string>& sequences)
  */
 int main() {
 	cout << "Part one..........................................................\n";
-	const string inputs[] = {
+/*	const string inputs[] = {
 		"029A",
 		"980A",
 		"179A",
 		"456A",
 		"379A"
+	};*/
+	const string inputs[] = {
+		"803A",
+		"528A",
+		"586A",
+		"341A",
+		"319A"
 	};
-
 	int64_t complexity_sum = 0;
 	for (int i = 0; i < 5; i++) {
 		const string& input = inputs[i];
@@ -361,10 +367,8 @@ int main() {
 			/* Debug
 			for (int l = 0; l < robot_2_output.size(); l++) {
 				if (robot_2_output[l] == "v<<A>>^A<A>AvA<^AA>A<vAAA>^A") {
-					static int breakhere = 5;
-					breakhere++;
+					static int breakhere = 5; breakhere++;
 				}
-
 			}
 			*/
 
@@ -418,13 +422,7 @@ int main() {
 					path_lists.push_back(arrowpad_pathlists);
 				}
 
-			//	int count_paths = 0;
-			//	for (int i = 0; i < path_lists.size(); i++) { count_paths += path_lists[i].size(); }
-
 				finalize_arrowpad(path_lists, robot_3_output);
-
-			//
-
 			}
 		} // Robot 3
 
