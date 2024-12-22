@@ -69,6 +69,13 @@ struct Vec2 {
 		return true;
 	}
 
+	bool valid_arrowpad_pos() const {
+		if (x < 0 || x > 2 || y < 0 || y > 1 || (x == 0 && y == 0)) {
+			return false;
+		}
+		return true;
+	}
+
 	int64_t x;
 	int64_t y;
 };
@@ -228,20 +235,20 @@ void find_arrowpad_paths(const char start_digit, const char end_digit, PathLists
 		}
 
 		const Vec2& cur_pos = cur_node.pos;
-		if (!cur_pos.valid_numpad_pos()) {
+		if (!cur_pos.valid_arrowpad_pos()) {
 			continue;
 		}
 
-		if (cur_pos.x < end_pos.x && cur_pos.right().valid_numpad_pos()) {
+		if (cur_pos.x < end_pos.x && cur_pos.right().valid_arrowpad_pos()) {
 			q.push(PathNode(cur_pos.right(), cur_pos, cur_node.path_taken));
 		}
-		if (cur_pos.x > end_pos.x && cur_pos.left().valid_numpad_pos()) {
+		if (cur_pos.x > end_pos.x && cur_pos.left().valid_arrowpad_pos()) {
 			q.push(PathNode(cur_pos.left(), cur_pos, cur_node.path_taken));
 		}
-		if (cur_pos.y < end_pos.y && cur_pos.down().valid_numpad_pos()) {
+		if (cur_pos.y < end_pos.y && cur_pos.down().valid_arrowpad_pos()) {
 			q.push(PathNode(cur_pos.down(), cur_pos, cur_node.path_taken));
 		}
-		if (cur_pos.y > end_pos.y && cur_pos.up().valid_numpad_pos()) {
+		if (cur_pos.y > end_pos.y && cur_pos.up().valid_arrowpad_pos()) {
 			q.push(PathNode(cur_pos.up(), cur_pos, cur_node.path_taken));
 		}
 	}
@@ -298,10 +305,10 @@ void finalize_arrowpad(vector<PathLists>& path_lists, vector<string>& sequences)
  */
 int main() {
 	cout << "Part one..........................................................\n";
-	
-
-	const string input = "029A";
-
+	//const string input = "029A";
+	//const string input = "980A";
+	//const string input = "456A";
+	const string input = "379A";
 	vector<string> robot_1_output;
 	{
 		vector<PathLists> all_path_lists;
@@ -315,6 +322,12 @@ int main() {
 			all_path_lists.push_back(path_lists);
 		}
 		finalize_numpad(all_path_lists, robot_1_output);
+		size_t min_len = SIZE_MAX;
+		for (auto it: robot_1_output) {
+			if (it.size() < min_len) {
+				min_len = it.size();
+			}
+		}
 	}
 
 	vector<string> robot_2_output;
@@ -334,7 +347,10 @@ int main() {
 			}
 
 			finalize_arrowpad(path_lists, robot_2_output);
-			for (int l = 0; l < robot_2_output.size(); l++) {
+		
+
+	}
+for (int l = 0; l < robot_2_output.size(); l++) {
 			//	cout << robot_2_output[l] << endl;
 				if (robot_2_output[l] == "v<<A>>^A<A>AvA<^AA>A<vAAA>^A") {
 					static int breakhere = 5;
@@ -342,11 +358,43 @@ int main() {
 				}
 
 			}
-		}
-	}
 
+			size_t min_len = SIZE_MAX;
+			for (auto it : robot_2_output) {
+				if (it.size() < min_len) {
+					min_len = it.size();
+				}
+			}
+			auto it = robot_2_output.begin();
+			while (it != robot_2_output.end()) {
+
+				if (it->size() > min_len) {
+					it = robot_2_output.erase(it);
+				}
+				else {
+					++it;
+				}
+			}
+		}
+	vector<string> robot_3_output;
+	int64_t min_val = INT64_MAX;
 	{
+		int64_t smallest_robot_2 = MAXINT;
+		int64_t smallest_idx;
 		for (int i = 0; i < robot_2_output.size(); i++) {
+			if (robot_2_output[i].find("<vA<AA>>^AvAA<^A>A<v<A>>") != robot_2_output[i].npos) {
+				static int we = 0; we++;
+			}
+			if ((int64_t)robot_2_output[i].size() < smallest_robot_2) {
+				smallest_robot_2 = robot_2_output[i].size();
+				smallest_idx = i;
+			}
+		}
+
+		for (int i = 0; i < robot_2_output.size(); i++) {
+			if (robot_2_output[i].size() != smallest_robot_2) {
+				continue;
+			}
 			vector<PathLists> path_lists;
 
 			const string& cur_sequence = robot_2_output[i];
@@ -360,35 +408,22 @@ int main() {
 				path_lists.push_back(arrowpad_pathlists);
 			}
 
-			finalize_arrowpad(path_lists, robot_2_output);
-			for (int l = 0; l < robot_2_output.size(); l++) {
-				//cout << robot_2_output[l] << endl;
-				if (robot_2_output[l] == "<vA<AA>>^AvAA<^A>A<v<A>>^AvA^A<vA>^A<v<A>^A>AAvA^A<v<A>A>^AAAvA<^A>A") {
-					int * v = nullptr;
-					*v = 34;
-				}
+		//	int count_paths = 0;
+		//	for (int i = 0; i < path_lists.size(); i++) { count_paths += path_lists[i].size(); }
 
+			finalize_arrowpad(path_lists, robot_3_output);
+
+		//
+			for (int l = 0; l < robot_3_output.size(); l++) {
+				if (robot_3_output[l].size() < min_val) {
+					min_val = robot_3_output[l].size();
+				}
 			}
 		}
 	}
-/*
 
-	+---+---+
-	| ^ | A |
-+---+---+---+
-| < | v | > |
-+---+---+---+
-
-* */
-	/*cout << "Paths between 'A' and '8':" << endl;
-	for (const auto& path: all_paths) {
-		for (const auto& node: path) {
-			cout << "[" << node.x << ", " << node.y << "] ";
-		}
-		cout << endl;
-	}*/
-
-
-// <A^A>^^AvvvA, <A^A^>^AvvvA, and <A^A^^>AvvvA.
-//v << A >> ^ A<A>AvA< ^ AA>A<vAAA> ^ A.
+	const int64_t input_as_number = std::atoi(input.substr(0, 3).c_str());
+	cout << "Final size is " << min_val << endl;
+	cout << "Numerical portion of input is " << input_as_number << endl;
+	cout << "Score is " << min_val * input_as_number << endl;
 }
