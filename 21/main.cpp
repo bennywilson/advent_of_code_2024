@@ -190,6 +190,7 @@ void finalize_numpad(vector<PathLists>& path_lists, vector<string>& sequences) {
 			}
 		}
 		new_sequence.push_back('A');
+cout << new_sequence << endl;
 		sequences.push_back(new_sequence);
 	}
 }
@@ -301,35 +302,27 @@ int main() {
 
 	const string input = "029A";
 
-	vector<string> sequences;
+	vector<string> robot_1_output;
 	{
-		PathLists a_to_zero;
-		find_numpad_paths('A', '0', a_to_zero);
+		vector<PathLists> all_path_lists;
+		PathLists path_lists;
+		find_numpad_paths('A', input[0], path_lists);
+		all_path_lists.push_back(path_lists);
 
-		PathLists zero_to_two;
-		find_numpad_paths('0', '2', zero_to_two);
-
-		PathLists two_to_nine;
-		find_numpad_paths('2', '9', two_to_nine);
-
-		PathLists nine_to_a;
-		find_numpad_paths('9', 'A', nine_to_a);
-
-		vector<PathLists> path_lists;
-		path_lists.push_back(a_to_zero);
-		path_lists.push_back(zero_to_two);
-		path_lists.push_back(two_to_nine);
-		path_lists.push_back(nine_to_a);
-
-
-		finalize_numpad(path_lists, sequences);
+		for (int i = 0; i < input.size() - 1; i++) {
+			path_lists.clear();
+			find_numpad_paths(input[i], input[i + 1], path_lists);
+			all_path_lists.push_back(path_lists);
+		}
+		finalize_numpad(all_path_lists, robot_1_output);
 	}
 
+	vector<string> robot_2_output;
 	{
-		for (int i = 0; i < sequences.size(); i++) {
+		for (int i = 0; i < robot_1_output.size(); i++) {
 			vector<PathLists> path_lists;
 
-			const string& cur_sequence = sequences[i];
+			const string& cur_sequence = robot_1_output[i];
 			PathLists arrowpad_pathlists;
 			find_arrowpad_paths('A', cur_sequence[0], arrowpad_pathlists);
 			path_lists.push_back(arrowpad_pathlists);
@@ -340,13 +333,39 @@ int main() {
 				path_lists.push_back(arrowpad_pathlists);
 			}
 
-			vector<string> new_sequences;
-			finalize_arrowpad(path_lists, new_sequences);
-			for (int l = 0; l < new_sequences.size(); l++) {
-				cout << new_sequences[l] << endl;
-				if (new_sequences[l] == "v<<A>>^A<A>AvA<^AA>A<vAAA>^A") {
+			finalize_arrowpad(path_lists, robot_2_output);
+			for (int l = 0; l < robot_2_output.size(); l++) {
+			//	cout << robot_2_output[l] << endl;
+				if (robot_2_output[l] == "v<<A>>^A<A>AvA<^AA>A<vAAA>^A") {
 					static int breakhere = 5;
 					breakhere++;
+				}
+
+			}
+		}
+	}
+
+	{
+		for (int i = 0; i < robot_2_output.size(); i++) {
+			vector<PathLists> path_lists;
+
+			const string& cur_sequence = robot_2_output[i];
+			PathLists arrowpad_pathlists;
+			find_arrowpad_paths('A', cur_sequence[0], arrowpad_pathlists);
+			path_lists.push_back(arrowpad_pathlists);
+
+			for (int i = 0; i < cur_sequence.size() - 1; i++) { // Skip \0 at end
+				arrowpad_pathlists.clear();
+				find_arrowpad_paths(cur_sequence[i], cur_sequence[i + 1], arrowpad_pathlists);
+				path_lists.push_back(arrowpad_pathlists);
+			}
+
+			finalize_arrowpad(path_lists, robot_2_output);
+			for (int l = 0; l < robot_2_output.size(); l++) {
+				//cout << robot_2_output[l] << endl;
+				if (robot_2_output[l] == "<vA<AA>>^AvAA<^A>A<v<A>>^AvA^A<vA>^A<v<A>^A>AAvA^A<v<A>A>^AAAvA<^A>A") {
+					int * v = nullptr;
+					*v = 34;
 				}
 
 			}
