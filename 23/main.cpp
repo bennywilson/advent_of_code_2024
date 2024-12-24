@@ -12,11 +12,6 @@ bool std_contains(const vector<V>& vec, const T& value) {
 	return std::find(vec.begin(), vec.end(), value) != vec.end();
 }
 
-template<typename V, typename T>
-bool std_contains(const V& vec, const T& value) {
-	return vec.find(value) != vec.end();
-
-}
 struct node {
 	vector<string> connections;
 };
@@ -37,7 +32,7 @@ void part_one() {
 		g_graph[node_2].connections.push_back(node_1);
 	}
 
-	unordered_set<string> g_connections;
+	unordered_set<string> interconnected_set;
 
 	for (const auto& it : g_graph) {
 		const auto& node_name = it.first;
@@ -60,7 +55,7 @@ void part_one() {
 					if (std_contains(neighors_connections, test_name)) {
 						vector<string> vecs = { node_name, neighbor_name, test_name };
 						std::sort(vecs.begin(), vecs.end());
-						g_connections.insert(vecs[0] + vecs[1] + vecs[2]);
+						interconnected_set.insert(vecs[0] + vecs[1] + vecs[2]);
 						found = true;
 					}
 				}
@@ -68,10 +63,11 @@ void part_one() {
 		}
 	}
 
-	for (auto it = g_connections.begin(); it != g_connections.end(); ++it) {
+	cout << "List of three inter-connected computers: " << endl;
+	for (auto it = interconnected_set.begin(); it != interconnected_set.end(); ++it) {
 		cout << *it << endl;
 	}
-	cout << "Num found = " << g_connections.size() << endl;
+	cout << "Total #: " << interconnected_set.size() << endl;
 
 }
 
@@ -121,11 +117,6 @@ void part_two() {
 		for (int i = 0; i < clique.size(); i++) {
 			password += clique[i];
 			password += ',';
-
-		/*	cout << clique[i];
-			if (i < clique.size() - 1) {
-				cout << ",";
-			}*/
 		}
 		cout << endl;
 	}
