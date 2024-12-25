@@ -19,22 +19,12 @@ bool std_contains(const V& vec, const T& value) {
 }
 
 struct Schematic {
-	Schematic(const bool _is_lock) :
-		is_lock(_is_lock),
-		heights(0){}
-
 	void print() {
-
-		if (is_lock) {
-			cout << "#####\n";
-		} else {
-			cout << ".....\n";
-		}
+		if (is_lock) { cout << "#####\n"; } else { cout << ".....\n"; }
 
 		for (int i = 0; i < 6; i++) {
-		
 				for (int pin = 0; pin < 5; pin++) {
-					int32_t height = heights / (int32_t)pow(10, pin) % 10;
+					int32_t height = pin_height(pin);
 					if (!is_lock) height = 6 - height;
 					if (height > i ) {
 						if (is_lock) cout << "#"; else cout << ".";
@@ -48,6 +38,9 @@ struct Schematic {
 		cout << endl;
 	}
 
+	int32_t pin_height(int32_t pin) {
+		return heights / (int32_t)pow(10, pin) % 10;
+	}
 
 	int32_t heights;
 	bool is_lock;
@@ -59,8 +52,10 @@ void part_one() {
 		return;
 	}
 
-	vector<Schematic> keys;
-	vector<Schematic> lock;
+	Schematic* root = nullptr;
+
+	vector<Schematic*> keys;
+	vector<Schematic*> locks;
 
 	string line;
 	while (getline(file, line)) {
@@ -69,28 +64,47 @@ void part_one() {
 		}
 
 		const bool is_lock = line[0] == '#';
-		const int32_t height_inc = 1;
+		const int32_t end = (is_lock)?(6):(5);
 
-		Schematic schematic(is_lock);
-
+		Schematic* const schematic = new Schematic();
+		schematic->is_lock = is_lock;
 		for (int height = 0; height < 6; height++) {
 			getline(file, line);
+			if (height == 5 && !is_lock) break;
 			for (int pin = 0; pin < 5; pin++) {
-
-				if (!is_lock) {
-					static int breakhere = 0;
-					breakhere++;
-				}
 				if (line[pin] == '#') {
-					const int32_t inc = height_inc * pow(10, pin);
-					schematic.heights += inc;
+					const int32_t inc = (int32_t)pow(10, pin);
+					schematic->heights += inc;
 				}
 			}
 		}
-		schematic.print();
+		//schematic->print();
+
+		if (is_lock) {
+			locks.push_back(schematic);
+		} else {
+			keys.push_back(schematic);
+		}
+
 		static int breakhere = 0;
 		breakhere++;
 	}
+
+	uint64_t total_matches = 0;
+	for (int k = 0; k < keys.size(); k++) {
+		for (int l = 0; l < locks.size(); l++) {
+			if (keys[k]->pin_height(0) + locks[l]->pin_height(0) <= 5 && 
+				keys[k]->pin_height(1) + locks[l]->pin_height(1) <= 5 && 
+				keys[k]->pin_height(2) + locks[l]->pin_height(2) <= 5 && 
+				keys[k]->pin_height(3) + locks[l]->pin_height(3) <= 5 &&
+				keys[k]->pin_height(4) + locks[l]->pin_height(4) <= 5) {
+				total_matches++;
+			} else {
+			}
+		}
+	}
+
+	cout << "\nThere are " << total_matches << " total matches. " << endl;
 }
 
 void part_two() { }
@@ -101,10 +115,5 @@ void part_two() { }
 int main() {
 	cout << "Part one..........................................................\n";	
 	part_one();
-
-//	cout << "\n\nPart one..........................................................\n";
-	//part_two();//
 	return 1;
 }
-
-// 56939028423824
