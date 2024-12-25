@@ -83,14 +83,16 @@ typedef vector<Path> PathLists;
 
 struct PathNode {
 	PathNode() : pos(-1, -1) {}
-	PathNode(const Vec2& _pos, const Vec2& prev_pos, const vector<Vec2>& prev_path = vector<Vec2>()) :
+	PathNode(const Vec2& _pos, const Vec2& prev_pos, const vector<Vec2>& prev_path = vector<Vec2>(), const string& _path = "") :
 		pos(_pos),
-		path_taken(prev_path) {
+		path_taken(prev_path),
+		path(_path) {
 			path_taken.push_back(pos);
 		}
 
-	Vec2	pos;
+	Vec2 pos;
 	Path path_taken;
+	string path;
 };
 
 Vec2 get_numpad_pos(const char num) {
@@ -213,7 +215,7 @@ Vec2 get_arrow_pos(const char num) {
 	return Vec2(-1, -1);
 }
 
-void find_arrowpad_paths(const char start_digit, const char end_digit, PathLists& all_paths_to_digits) {
+void find_arrowpad_paths(const char start_digit, const char end_digit, PathLists& all_paths_to_digits, vector<string>& sequences) {
 	const int64_t arrowpad_width = 3;
 	const int64_t arrowpad_height = 2;
 	const Vec2 invalid_arrowpad_pos(0, 0);
@@ -229,6 +231,8 @@ void find_arrowpad_paths(const char start_digit, const char end_digit, PathLists
 		q.pop();
 		if (cur_node.pos == end_pos) {
 			all_paths_to_digits.push_back(cur_node.path_taken);
+
+			sequences.push_back(cur_node.path + 'A');
 			continue;
 		}
 
@@ -238,21 +242,21 @@ void find_arrowpad_paths(const char start_digit, const char end_digit, PathLists
 		}
 
 		if (cur_pos.x < end_pos.x && cur_pos.right().valid_arrowpad_pos()) {
-			q.push(PathNode(cur_pos.right(), cur_pos, cur_node.path_taken));
+			q.push(PathNode(cur_pos.right(), cur_pos, cur_node.path_taken, cur_node.path + '>'));
 		}
 		if (cur_pos.x > end_pos.x && cur_pos.left().valid_arrowpad_pos()) {
-			q.push(PathNode(cur_pos.left(), cur_pos, cur_node.path_taken));
+			q.push(PathNode(cur_pos.left(), cur_pos, cur_node.path_taken, cur_node.path + '<'));
 		}
 		if (cur_pos.y < end_pos.y && cur_pos.down().valid_arrowpad_pos()) {
-			q.push(PathNode(cur_pos.down(), cur_pos, cur_node.path_taken));
+			q.push(PathNode(cur_pos.down(), cur_pos, cur_node.path_taken, cur_node.path + 'v'));
 		}
 		if (cur_pos.y > end_pos.y && cur_pos.up().valid_arrowpad_pos()) {
-			q.push(PathNode(cur_pos.up(), cur_pos, cur_node.path_taken));
+			q.push(PathNode(cur_pos.up(), cur_pos, cur_node.path_taken, cur_node.path + '^'));
 		}
 	}
 }
 
-void finalize_arrowpad(vector<PathLists>& path_lists, vector<string>& sequences) {
+void finalize_arrowpad(vector<PathLists>& path_lists, vector<string>& sequences, const vector<string>& src_seq) {
 	PathLists path_list_1 = path_lists[0];
 	PathLists path_list_2;
 
@@ -296,6 +300,22 @@ void finalize_arrowpad(vector<PathLists>& path_lists, vector<string>& sequences)
 		new_sequence.push_back('A');
 		sequences.push_back(new_sequence);
 	}
+
+/*
+	for (int seq = 0; seq < src_seq.size(); pathlist_idx++) {
+		PathLists& src = (path_list_1.size() > 0) ? (path_list_1) : (path_list_2);
+		PathLists& dst = (path_list_1.size() > 0) ? (path_list_2) : (path_list_1);
+
+		for (auto& front_path : src) {
+			for (auto& back_path : path_lists[pathlist_idx]) {
+				Path new_path = front_path;
+				new_path.insert(new_path.end(), back_path.begin(), back_path.end());
+				dst.push_back(new_path);
+			}
+		}
+		src.clear();
+	}*/
+
 }
 
 void process_arrowpad(const vector<string>& in, vector<string>& out, const bool trim) {
@@ -304,16 +324,20 @@ void process_arrowpad(const vector<string>& in, vector<string>& out, const bool 
 		const string& cur_sequence = in[i];
 	
 		PathLists arrowpad_pathlists;
-		find_arrowpad_paths('A', cur_sequence[0], arrowpad_pathlists);
+		vector<string> sequences;
+		find_arrowpad_paths('A', cur_sequence[0], arrowpad_pathlists, sequences);
 		vector<PathLists> path_lists = { arrowpad_pathlists };
 	
 		for (size_t i = 0; i < cur_sequence.size() - 1; i++) { // Skip \0 at end
 			PathLists arrowpad_pathlists;
-			find_arrowpad_paths(cur_sequence[i], cur_sequence[i + 1], arrowpad_pathlists);
+			find_arrowpad_paths(cur_sequence[i], cur_sequence[i + 1], arrowpad_pathlists, sequences);
 			path_lists.push_back(arrowpad_pathlists);
 		}
 	
-		finalize_arrowpad(path_lists, out);
+		finalize_arrowpad(path_lists, out, sequences);
+
+		static int breakhere = 0;
+		breakhere++;
 	}
 	
 	if (trim) {
