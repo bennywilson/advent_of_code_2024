@@ -78,6 +78,10 @@ struct Vec2 {
 	int64_t y;
 };
 
+typedef string sPath;
+typedef vector<string> sPathLists;
+typedef vector<sPathLists> sSequencePath;
+
 typedef vector<Vec2> Path;
 typedef vector<Path> PathLists;
 
@@ -231,8 +235,7 @@ void find_arrowpad_paths(const char start_digit, const char end_digit, PathLists
 		q.pop();
 		if (cur_node.pos == end_pos) {
 			all_paths_to_digits.push_back(cur_node.path_taken);
-
-			sequences.push_back(cur_node.path + 'A');
+			sequences.push_back(cur_node.path);
 			continue;
 		}
 
@@ -256,119 +259,58 @@ void find_arrowpad_paths(const char start_digit, const char end_digit, PathLists
 	}
 }
 
-void finalize_arrowpad(vector<PathLists>& path_lists, vector<string>& sequences, const vector<string>& src_seq) {
-	PathLists path_list_1 = path_lists[0];
-	PathLists path_list_2;
-
-	for (int pathlist_idx = 1; pathlist_idx < path_lists.size(); pathlist_idx++) {
-		PathLists& src = (path_list_1.size() > 0) ? (path_list_1) : (path_list_2);
-		PathLists& dst = (path_list_1.size() > 0) ? (path_list_2) : (path_list_1);
-
-		for (auto& front_path : src) {
-			for (auto& back_path : path_lists[pathlist_idx]) {
-				Path new_path = front_path;
-				new_path.insert(new_path.end(), back_path.begin(), back_path.end());
-				dst.push_back(new_path);
-			}
-		}
-		src.clear();
-	}
-
-	PathLists& src = (path_list_1.size() > 0) ? (path_list_1) : (path_list_2);
-	for (int i = 0; i < src.size(); i++) {
-		Path& cur_path = src[i];
-		string new_sequence;
-		for (int j = 1; j < cur_path.size(); j++) {
-			const Vec2& cur_pos = cur_path[j];
-			const Vec2& prev_pos = cur_path[(size_t)j - 1];
-			if (cur_pos == prev_pos) {
-				new_sequence.push_back('A');
-			}
-			else if (cur_pos.x < prev_pos.x) {
-				new_sequence.push_back('<');
-			}
-			else if (cur_pos.x > prev_pos.x) {
-				new_sequence.push_back('>');
-			}
-			else if (cur_pos.y > prev_pos.y) {
-				new_sequence.push_back('v');
-			}
-			else {
-				new_sequence.push_back('^');
-			}
-		}
-		new_sequence.push_back('A');
-		sequences.push_back(new_sequence);
-	}
-
 /*
-	for (int seq = 0; seq < src_seq.size(); pathlist_idx++) {
-		PathLists& src = (path_list_1.size() > 0) ? (path_list_1) : (path_list_2);
-		PathLists& dst = (path_list_1.size() > 0) ? (path_list_2) : (path_list_1);
+x ^ A | x ^ A
+< v > | < v >
+*/
+void finalize_arrowpad(const sSequencePath& src_seq, sPathLists& out_paths) {
+	sPathLists path_1 = {src_seq[0]};
+	sPathLists path_2;
+	for (int path_idx = 1; path_idx < src_seq.size(); path_idx++) {
+		vector<string>& src = (path_1.size() > 0) ? (path_1) : (path_2);
+		vector<string>& dst = (path_1.size() > 0) ? (path_2) : (path_1);
 
-		for (auto& front_path : src) {
-			for (auto& back_path : path_lists[pathlist_idx]) {
-				Path new_path = front_path;
-				new_path.insert(new_path.end(), back_path.begin(), back_path.end());
-				dst.push_back(new_path);
+		for (auto& front: src) {
+			for (auto& back: src_seq[path_idx]) {
+				const string final = front + "A" + back;
+				dst.push_back(final);
 			}
 		}
 		src.clear();
-	}*/
-
+	}
+	vector<string>& src2 = (path_1.size() > 0) ? (path_1) : (path_2);
+	for (int i = 0; i < src2.size(); i++) {
+		out_paths.push_back(src2[i] + 'A');
+	}
 }
 
-void process_arrowpad(const vector<string>& in, vector<string>& out, const bool trim) {
+void process_arrowpad(const sPathLists& in_path, sPathLists& out_paths, const bool trim) {
 
-	for (size_t i = 0; i < in.size(); i++) {
-		const string& cur_sequence = in[i];
+	for (size_t i = 0; i < in_path.size(); i++) {
+		const string& cur_sequence = in_path[i];
 	
 		PathLists arrowpad_pathlists;
-		vector<string> sequences;
+		vector<string> sequences = {};
 		find_arrowpad_paths('A', cur_sequence[0], arrowpad_pathlists, sequences);
 		vector<PathLists> path_lists = { arrowpad_pathlists };
-	
+		sSequencePath sSequences = {sequences};
+
 		for (size_t i = 0; i < cur_sequence.size() - 1; i++) { // Skip \0 at end
 			PathLists arrowpad_pathlists;
+			vector<string> sequences = {};
 			find_arrowpad_paths(cur_sequence[i], cur_sequence[i + 1], arrowpad_pathlists, sequences);
 			path_lists.push_back(arrowpad_pathlists);
+			sSequences.push_back(sequences);
 		}
 	
-		finalize_arrowpad(path_lists, out, sequences);
+		finalize_arrowpad(sSequences, out_paths);
 
 		static int breakhere = 0;
 		breakhere++;
-	}
-	
-	if (trim) {
-		// Only keep the shortest paths
-		size_t min_len = SIZE_MAX;
-		for (size_t i = 0; i < out.size(); i++) {
-			if (out[i].size() < min_len) {
-				min_len = out[i].size();
-			}
-		}
-		auto it = out.begin();
-		while (it != out.end()) {
-	
-			if (it->size() > min_len) {
-				it = out.erase(it);
-			}
-			else {
-				++it;
-			}
-		}
 	}	
 }
 
 void part_one() {
-	/*	const string inputs[] = {
-			"029A",
-			"980A",
-			"179A",
-			"456A",
-			"379A"
-		};*/
 	const string inputs[] = {
 		"803A",
 		"528A",
@@ -380,7 +322,7 @@ void part_one() {
 	for (int input_idx = 0; input_idx < 5; input_idx++) {
 		const string& input = inputs[input_idx];
 
-		vector<string> list_1, list_2;
+		sPathLists paths1, paths2;
 		{
 			PathLists path_lists;
 			find_numpad_paths('A', input[0], path_lists);
@@ -391,29 +333,19 @@ void part_one() {
 				find_numpad_paths(input[i], input[i + 1], path_lists);
 				all_path_lists.push_back(path_lists);
 			}
-			finalize_numpad(all_path_lists, list_1);
+			finalize_numpad(all_path_lists, paths1);
 		}
-
-
-
 
 		for (int i = 0; i < 2; i++) {
-			vector<string>& src = (list_1.size() > 0)?(list_1):(list_2);
-			vector<string>& dst = (list_1.size() > 0) ? (list_2) : (list_1);
+			sPathLists& src_pathlists = (paths1.size() > 0)?(paths1):(paths2);
+			sPathLists& dst_pathlists = (paths1.size() > 0) ? (paths2) : (paths1);
 
-			process_arrowpad(src, dst, i < 1);
-			src.clear();
-
+			process_arrowpad(src_pathlists, dst_pathlists, i < 1);
+			src_pathlists.clear();
 		}
 
-	//	vector<string> robot_2_output;
-	//	process_arrowpad(robot_1_output, robot_2_output, true);
-
-	//	vector<string> robot_3_output;
-	//	process_arrowpad(robot_2_output, robot_3_output, false);
-
 		int64_t min_val = INT64_MAX;
-		vector<string>& src = (list_1.size() > 0) ? (list_1) : (list_2);
+		vector<string>& src = (paths1.size() > 0) ? (paths1) : (paths2);
 		for (int l = 0; l < src.size(); l++) {
 			if (src[l].size() < min_val) {
 				min_val = src[l].size();

@@ -20,3 +20,6 @@
 *.opendb
 *.db-wal
 *.txt
+*.wsuo
+*.sqlite
+*graphviz*
