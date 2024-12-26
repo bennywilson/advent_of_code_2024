@@ -2,6 +2,7 @@
 #include <chrono>
 #include <fstream>
 #include <iostream>
+#include <unordered_map>
 #include <sstream>
 #include <queue>
 
@@ -227,6 +228,8 @@ void finalize_arrowpad(const SequencePath& src_seq, PathLists& out_paths) {
 	}
 }
 
+unordered_map<string, SequencePath> cache;
+
 void part_one() {
 	const string inputs[] = {
 		"803A",
@@ -262,13 +265,35 @@ void part_one() {
 				find_arrowpad_paths('A', cur_sequence[0], sequences);
 				SequencePath sSequences = { sequences };
 
+				SequencePath test_seq = { sequences };
 				for (size_t i = 0; i < cur_sequence.size() - 1; i++) { // Skip \0 at end
-					vector<string> sequences = {};
-					find_arrowpad_paths(cur_sequence[i], cur_sequence[i + 1], sequences);
-					sSequences.push_back(sequences);
+					vector<string> testsequences = {};
+					find_arrowpad_paths(cur_sequence[i], cur_sequence[i + 1], testsequences);
+					test_seq.push_back(testsequences);
 				}
 
-				finalize_arrowpad(sSequences, dst_pathlists);
+				size_t cmd_start = 0;
+
+				size_t cmd_end = cur_sequence.find('A');
+			//	SequencePath sSequences = { sequences };
+				while (cmd_start < cur_sequence.length()) {
+					string cache_val = cur_sequence.substr(cmd_start, cmd_end - cmd_start);
+
+					for (int64_t i = 0; i < ((int64_t)cache_val.size()) - 1; i++) { // Skip \0 at end
+							vector<string> sequences = {};
+							find_arrowpad_paths(cache_val[i], cache_val[i + 1], sequences);
+							sSequences.push_back(sequences);
+						}
+						//sSequences.push_back(sequences);
+						cache[cache_val] = sSequences;
+
+					
+					cmd_start = cmd_end + 1;
+					cmd_end = cur_sequence.find('A', cmd_start);
+				}
+
+
+				finalize_arrowpad(test_seq, dst_pathlists);
 			}
 			src_pathlists.clear();
 		}
