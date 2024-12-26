@@ -78,9 +78,9 @@ struct Vec2 {
 	int64_t y;
 };
 
-typedef string sPath;
-typedef vector<string> sPathLists;
-typedef vector<sPathLists> sSequencePath;
+typedef string Path;
+typedef vector<string> PathLists;
+typedef vector<PathLists> SequencePath;
 
 struct PathNode {
 	PathNode() : pos(-1, -1) {}
@@ -111,7 +111,7 @@ Vec2 get_numpad_pos(const char num) {
 	return Vec2(-1, -1);
 }
 
-void find_numpad_paths(const char start_digit, const char end_digit, sPathLists& s_paths) {
+void find_numpad_paths(const char start_digit, const char end_digit, PathLists& s_paths) {
 	const int64_t numpad_width = 3;
 	const int64_t numpad_height = 4;
 	const Vec2 invalid_numpad_pos(0, 3);
@@ -206,9 +206,9 @@ void find_arrowpad_paths(const char start_digit, const char end_digit, vector<st
 x ^ A | x ^ A
 < v > | < v >
 */
-void finalize_arrowpad(const sSequencePath& src_seq, sPathLists& out_paths) {
-	sPathLists path_1 = {src_seq[0]};
-	sPathLists path_2;
+void finalize_arrowpad(const SequencePath& src_seq, PathLists& out_paths) {
+	PathLists path_1 = {src_seq[0]};
+	PathLists path_2;
 	for (int path_idx = 1; path_idx < src_seq.size(); path_idx++) {
 		vector<string>& src = (path_1.size() > 0) ? (path_1) : (path_2);
 		vector<string>& dst = (path_1.size() > 0) ? (path_2) : (path_1);
@@ -239,30 +239,28 @@ void part_one() {
 	for (int input_idx = 0; input_idx < 5; input_idx++) {
 		const string& input = inputs[input_idx];
 
-		sPathLists paths1, paths2;
+		PathLists paths1, paths2;
 		{
-			sPathLists new_paths;
+			PathLists new_paths;
 			find_numpad_paths('A', input[0], new_paths);
-			vector<sPathLists> s_all_path_lists = { new_paths };
+			vector<PathLists> s_all_path_lists = { new_paths };
 
 			for (size_t i = 0; i < input.size() - 1; i++) {
-				sPathLists new_paths;
+				PathLists new_paths;
 				find_numpad_paths(input[i], input[i + 1], new_paths);
 				s_all_path_lists.push_back(new_paths);
 			}
 			finalize_arrowpad(s_all_path_lists, paths1);
 		}
 
-		for (int i = 0; i < 2; i++) {
-			sPathLists& src_pathlists = (paths1.size() > 0)?(paths1):(paths2);
-			sPathLists& dst_pathlists = (paths1.size() > 0) ? (paths2) : (paths1);
+		for (int robot_idx = 0; robot_idx < 2; robot_idx++) {
+			PathLists& src_pathlists = (paths1.size() > 0)?(paths1):(paths2);
+			PathLists& dst_pathlists = (paths1.size() > 0)?(paths2):(paths1);
 
-			for (size_t i = 0; i < src_pathlists.size(); i++) {
-				const string& cur_sequence = src_pathlists[i];
-
+			for (const auto& cur_sequence : src_pathlists) {
 				vector<string> sequences = {};
 				find_arrowpad_paths('A', cur_sequence[0], sequences);
-				sSequencePath sSequences = { sequences };
+				SequencePath sSequences = { sequences };
 
 				for (size_t i = 0; i < cur_sequence.size() - 1; i++) { // Skip \0 at end
 					vector<string> sequences = {};
