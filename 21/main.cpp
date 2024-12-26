@@ -82,20 +82,13 @@ typedef string sPath;
 typedef vector<string> sPathLists;
 typedef vector<sPathLists> sSequencePath;
 
-typedef vector<Vec2> Path;
-typedef vector<Path> PathLists;
-
 struct PathNode {
 	PathNode() : pos(-1, -1) {}
-	PathNode(const Vec2& _pos, const Vec2& prev_pos, const vector<Vec2>& prev_path = vector<Vec2>(), const string& _path = "") :
+	PathNode(const Vec2& _pos, const Vec2& prev_pos, const string& _path = "") :
 		pos(_pos),
-		path_taken(prev_path),
-		path(_path) {
-			path_taken.push_back(pos);
-		}
+		path(_path) {}
 
 	Vec2 pos;
-	Path path_taken;
 	string path;
 };
 
@@ -118,7 +111,7 @@ Vec2 get_numpad_pos(const char num) {
 	return Vec2(-1, -1);
 }
 
-void find_numpad_paths(const char start_digit, const char end_digit, PathLists& all_paths_to_digits) {
+void find_numpad_paths(const char start_digit, const char end_digit, sPathLists& s_paths) {
 	const int64_t numpad_width = 3;
 	const int64_t numpad_height = 4;
 	const Vec2 invalid_numpad_pos(0, 3);
@@ -133,7 +126,7 @@ void find_numpad_paths(const char start_digit, const char end_digit, PathLists& 
 		const PathNode cur_node = q.front();
 		q.pop();
 		if (cur_node.pos == end_pos) {
-			all_paths_to_digits.push_back(cur_node.path_taken);
+			s_paths.push_back(cur_node.path);
 			continue;
 		}
 
@@ -143,66 +136,17 @@ void find_numpad_paths(const char start_digit, const char end_digit, PathLists& 
 		}
 
 		if (cur_pos.x < end_pos.x && cur_pos.right().valid_numpad_pos()) {
-			q.push(PathNode(cur_pos.right(), cur_pos, cur_node.path_taken));
+			q.push(PathNode(cur_pos.right(), cur_pos, cur_node.path + ">"));
 		}
 		if (cur_pos.x > end_pos.x && cur_pos.left().valid_numpad_pos()) {
-			q.push(PathNode(cur_pos.left(), cur_pos, cur_node.path_taken));
+			q.push(PathNode(cur_pos.left(), cur_pos, cur_node.path + "<"));
 		}
 		if (cur_pos.y < end_pos.y && cur_pos.down().valid_numpad_pos()) {
-			q.push(PathNode(cur_pos.down(), cur_pos, cur_node.path_taken));
+			q.push(PathNode(cur_pos.down(), cur_pos, cur_node.path + "v"));
 		}
 		if (cur_pos.y > end_pos.y && cur_pos.up().valid_numpad_pos()) {
-			q.push(PathNode(cur_pos.up(), cur_pos, cur_node.path_taken));
+			q.push(PathNode(cur_pos.up(), cur_pos, cur_node.path + "^"));
 		}
-	}
-}
-
-void finalize_numpad(vector<PathLists>& path_lists, vector<string>& sequences) {
-	
-	//for (auto path_list = path_lists.begin(); path_list != path_lists.end() - 1; ++path_list) {
-	PathLists path_list_1 = path_lists[0];
-	PathLists path_list_2;
-
-	for (int pathlist_idx = 1; pathlist_idx < path_lists.size(); pathlist_idx++) {
-		PathLists& src = (path_list_1.size() > 0)?(path_list_1):(path_list_2);
-		PathLists& dst = (path_list_1.size() > 0) ? (path_list_2) : (path_list_1);
-
-		for (auto& front_path: src) {
-			for (auto& back_path: path_lists[pathlist_idx]) {
-				Path new_path = front_path;
-				new_path.insert(new_path.end(), back_path.begin(), back_path.end());
-				dst.push_back(new_path);
-			}
-		}
-		src.clear();
-	}
-
-	PathLists& src = (path_list_1.size() > 0) ? (path_list_1) : (path_list_2);
-	for (int i = 0; i < src.size(); i++) {
-		Path& cur_path = src[i];
-		string new_sequence;
-		for (int j = 1; j < cur_path.size(); j++) {
-			const Vec2& cur_pos = cur_path[j];
-			const Vec2& prev_pos = cur_path[(size_t)j - 1];
-			if (cur_pos == prev_pos) {
-				new_sequence.push_back('A');
-			}
-			else if (cur_pos.x < prev_pos.x) {
-				new_sequence.push_back('<');
-			}
-			else if (cur_pos.x > prev_pos.x) {
-				new_sequence.push_back('>');
-			}
-			else if (cur_pos.y > prev_pos.y) {
-				new_sequence.push_back('v');
-			}
-			else {
-				new_sequence.push_back('^');
-			}
-		}
-		new_sequence.push_back('A');
-cout << new_sequence << endl;
-		sequences.push_back(new_sequence);
 	}
 }
 
@@ -219,7 +163,7 @@ Vec2 get_arrow_pos(const char num) {
 	return Vec2(-1, -1);
 }
 
-void find_arrowpad_paths(const char start_digit, const char end_digit, PathLists& all_paths_to_digits, vector<string>& sequences) {
+void find_arrowpad_paths(const char start_digit, const char end_digit, vector<string>& sequences) {
 	const int64_t arrowpad_width = 3;
 	const int64_t arrowpad_height = 2;
 	const Vec2 invalid_arrowpad_pos(0, 0);
@@ -234,7 +178,6 @@ void find_arrowpad_paths(const char start_digit, const char end_digit, PathLists
 		const PathNode cur_node = q.front();
 		q.pop();
 		if (cur_node.pos == end_pos) {
-			all_paths_to_digits.push_back(cur_node.path_taken);
 			sequences.push_back(cur_node.path);
 			continue;
 		}
@@ -245,16 +188,16 @@ void find_arrowpad_paths(const char start_digit, const char end_digit, PathLists
 		}
 
 		if (cur_pos.x < end_pos.x && cur_pos.right().valid_arrowpad_pos()) {
-			q.push(PathNode(cur_pos.right(), cur_pos, cur_node.path_taken, cur_node.path + '>'));
+			q.push(PathNode(cur_pos.right(), cur_pos, cur_node.path + '>'));
 		}
 		if (cur_pos.x > end_pos.x && cur_pos.left().valid_arrowpad_pos()) {
-			q.push(PathNode(cur_pos.left(), cur_pos, cur_node.path_taken, cur_node.path + '<'));
+			q.push(PathNode(cur_pos.left(), cur_pos, cur_node.path + '<'));
 		}
 		if (cur_pos.y < end_pos.y && cur_pos.down().valid_arrowpad_pos()) {
-			q.push(PathNode(cur_pos.down(), cur_pos, cur_node.path_taken, cur_node.path + 'v'));
+			q.push(PathNode(cur_pos.down(), cur_pos, cur_node.path + 'v'));
 		}
 		if (cur_pos.y > end_pos.y && cur_pos.up().valid_arrowpad_pos()) {
-			q.push(PathNode(cur_pos.up(), cur_pos, cur_node.path_taken, cur_node.path + '^'));
+			q.push(PathNode(cur_pos.up(), cur_pos, cur_node.path + '^'));
 		}
 	}
 }
@@ -284,32 +227,6 @@ void finalize_arrowpad(const sSequencePath& src_seq, sPathLists& out_paths) {
 	}
 }
 
-void process_arrowpad(const sPathLists& in_path, sPathLists& out_paths, const bool trim) {
-
-	for (size_t i = 0; i < in_path.size(); i++) {
-		const string& cur_sequence = in_path[i];
-	
-		PathLists arrowpad_pathlists;
-		vector<string> sequences = {};
-		find_arrowpad_paths('A', cur_sequence[0], arrowpad_pathlists, sequences);
-		vector<PathLists> path_lists = { arrowpad_pathlists };
-		sSequencePath sSequences = {sequences};
-
-		for (size_t i = 0; i < cur_sequence.size() - 1; i++) { // Skip \0 at end
-			PathLists arrowpad_pathlists;
-			vector<string> sequences = {};
-			find_arrowpad_paths(cur_sequence[i], cur_sequence[i + 1], arrowpad_pathlists, sequences);
-			path_lists.push_back(arrowpad_pathlists);
-			sSequences.push_back(sequences);
-		}
-	
-		finalize_arrowpad(sSequences, out_paths);
-
-		static int breakhere = 0;
-		breakhere++;
-	}	
-}
-
 void part_one() {
 	const string inputs[] = {
 		"803A",
@@ -324,29 +241,43 @@ void part_one() {
 
 		sPathLists paths1, paths2;
 		{
-			PathLists path_lists;
-			find_numpad_paths('A', input[0], path_lists);
-			vector<PathLists> all_path_lists = { path_lists };
+			sPathLists new_paths;
+			find_numpad_paths('A', input[0], new_paths);
+			vector<sPathLists> s_all_path_lists = { new_paths };
 
 			for (size_t i = 0; i < input.size() - 1; i++) {
-				PathLists path_lists;
-				find_numpad_paths(input[i], input[i + 1], path_lists);
-				all_path_lists.push_back(path_lists);
+				sPathLists new_paths;
+				find_numpad_paths(input[i], input[i + 1], new_paths);
+				s_all_path_lists.push_back(new_paths);
 			}
-			finalize_numpad(all_path_lists, paths1);
+			finalize_arrowpad(s_all_path_lists, paths1);
 		}
 
 		for (int i = 0; i < 2; i++) {
 			sPathLists& src_pathlists = (paths1.size() > 0)?(paths1):(paths2);
 			sPathLists& dst_pathlists = (paths1.size() > 0) ? (paths2) : (paths1);
 
-			process_arrowpad(src_pathlists, dst_pathlists, i < 1);
+			for (size_t i = 0; i < src_pathlists.size(); i++) {
+				const string& cur_sequence = src_pathlists[i];
+
+				vector<string> sequences = {};
+				find_arrowpad_paths('A', cur_sequence[0], sequences);
+				sSequencePath sSequences = { sequences };
+
+				for (size_t i = 0; i < cur_sequence.size() - 1; i++) { // Skip \0 at end
+					vector<string> sequences = {};
+					find_arrowpad_paths(cur_sequence[i], cur_sequence[i + 1], sequences);
+					sSequences.push_back(sequences);
+				}
+
+				finalize_arrowpad(sSequences, dst_pathlists);
+			}
 			src_pathlists.clear();
 		}
 
-		int64_t min_val = INT64_MAX;
+		size_t min_val = SIZE_MAX;
 		vector<string>& src = (paths1.size() > 0) ? (paths1) : (paths2);
-		for (int l = 0; l < src.size(); l++) {
+		for (size_t l = 0; l < src.size(); l++) {
 			if (src[l].size() < min_val) {
 				min_val = src[l].size();
 			}
