@@ -274,10 +274,15 @@ void shrink_list(PathLists& paths) {
 	size_t idx;
 	vector<string>& src = paths;
 	for (size_t l = 0; l < src.size(); l++) {
-		if (src[l].size() < min_val) {
-			min_val = src[l].size();
+		size_t dir_change = dir_changes(src[l]);
+		if (dir_change < min_val) {
+			min_val = dir_change;
 			idx = l;
 		}
+	/*	if (src[l].size() < min_val) {
+			min_val = dir_changes[l].size();
+			idx = l;
+		}*/
 	}
 
 	paths[0] = paths[idx];
@@ -360,7 +365,7 @@ void part_one() {
 							lordy++;
 						}
 						SequencePath local_seq;
-						for (int64_t i = cmd_start; cmd_end != cur_sequence.npos && i < cmd_end; i++) {
+						for (int64_t i = cmd_start; cmd_end != (int64_t)cur_sequence.npos && i < cmd_end; i++) {
 								vector<string> sequences = {};
 								find_arrowpad_paths(cur_sequence[i], cur_sequence[i + 1], sequences);
 								local_seq.push_back(sequences);
@@ -399,10 +404,215 @@ void part_one() {
 	cout << "Complexity sum is " << complexity_sum << endl;
 }
 
+struct ArrowCache {
+	ArrowCache(char _s, char _e, bool debug = false) :
+		start(_s), end(_e) {
+		if (debug)
+		cout << "Arrow Caching " << _s << " " << _e << endl;
+}
+	char start;
+	char end;
+	bool operator==(const ArrowCache& op) const { return start == op.start && end == op.end; }
+};
+
+struct ArrowInfo {
+	ArrowInfo() : count(0) {}
+	ArrowInfo(uint64_t count, const string& seq) : count(0), sequence(seq) {}
+	uint64_t count;
+	string sequence;
+};
+
+namespace std {
+	template<> struct hash<ArrowCache> {
+		size_t operator()(const ArrowCache& r) const {
+			size_t res = hash<char>{}(r.start) ^ hash<char>{}(r.end);
+			return res;
+		}
+	};
+};
+
+string expand_sequence(char start, char end, unordered_map<ArrowCache, ArrowInfo>& arrow_cache) {
+	const string& new_seq = arrow_cache[ArrowCache(start, end)].sequence;
+	return new_seq;
+}
+
+/*
+*				X  ^  A
+*				<  v  >
+* */
+void part_two() {
+
+	PathLists sequences;
+	unordered_map<ArrowCache, ArrowInfo> arrow_cache;
+
+	#define CACHE_PATH(A, B) \
+		sequences.clear(); \
+		find_arrowpad_paths(A, B, sequences); \
+		arrow_cache[ArrowCache(A, B)] = ArrowInfo(sequences.size(), sequences[0]);
+
+	CACHE_PATH('A', '^');
+	CACHE_PATH('A', '<');
+	CACHE_PATH('A', 'v');
+	CACHE_PATH('A', '>');
+	arrow_cache[ArrowCache('A', 'A')] = ArrowInfo(1, "A");
+
+	CACHE_PATH('^', 'A');
+	CACHE_PATH('^', '>');
+	CACHE_PATH('^', 'v');
+	CACHE_PATH('^', '<');
+	arrow_cache[ArrowCache('^', '^')] = ArrowInfo(1, "A");
+
+
+	CACHE_PATH('<', 'A');
+	CACHE_PATH('<', '^');
+	CACHE_PATH('<', 'v');
+	CACHE_PATH('<', '>');
+	arrow_cache[ArrowCache('<', '<')] = ArrowInfo(1, "A");
+
+	CACHE_PATH('>', 'A');
+	CACHE_PATH('>', '^');
+	CACHE_PATH('>', 'v');
+	CACHE_PATH('>', '<');
+	arrow_cache[ArrowCache('>', '>')] = ArrowInfo(1, "A");
+
+	CACHE_PATH('v', '^');
+	CACHE_PATH('v', 'A');
+	CACHE_PATH('v', '>');
+	CACHE_PATH('v', '<');
+	arrow_cache[ArrowCache('v', 'v')] = ArrowInfo(1, "A");
+
+	const string inputs[] = {
+		"029A",
+		"803A",
+		"528A",
+		"586A",
+		"341A",
+		"319A"
+	};
+
+	int64_t complexity_sum = 0;
+	for (int input_idx = 0; input_idx < 1; input_idx++) {
+		const string& input = inputs[input_idx];
+
+		PathLists paths1;
+		PathLists new_paths;
+		find_numpad_paths('A', input[0], new_paths);
+		vector<PathLists> s_all_path_lists = { new_paths };
+
+		for (size_t i = 0; i < input.size() - 1; i++) {
+			PathLists new_paths;
+			find_numpad_paths(input[i], input[i + 1], new_paths);
+			s_all_path_lists.push_back(new_paths);
+		}
+		finalize_arrowpad(s_all_path_lists, paths1);
+
+		shrink_list(paths1);
+		
+		unordered_map<ArrowCache, uint64_t> map_1;
+		map_1[ArrowCache('A', paths1[0][0])] = 1;
+		for (int i = 0; i < paths1[0].size() - 1; i++) {
+			map_1[ArrowCache(paths1[0][i], paths1[0][i + 1])]++;
+		}
+		//map_1[ArrowCache(paths1[0].back(), 'A')]++;
+
+		unordered_map<ArrowCache, uint64_t> map_2;
+
+		// paths_1 start <A^A>^^AvvvA
+		for (int robot_idx = 0; robot_idx < 2; robot_idx++) {
+			unordered_map<ArrowCache, uint64_t>& src = (map_1.size() > 0)?(map_1):(map_2);
+			unordered_map<ArrowCache, uint64_t>& dst = (map_1.size() > 0) ? (map_2) : (map_1);
+	
+			for (const auto& key: src) {
+				uint64_t src_count = key.second;
+				const string new_seq = expand_sequence(key.first.start, key.first.end, arrow_cache);
+				cout << "Src = (" << key.first.start << ", " << key.first.end << "). count = " << key.second << ", expanded = " << new_seq << endl;
+
+				dst[ArrowCache('A', new_seq[0], false)] += src_count;
+
+				if (new_seq[0] == 'A') {
+					static int breakhere = 0;
+					breakhere++;
+					continue;
+				}
+
+				for (int i = 0; i < new_seq.size() - 1; i++) {
+					if (new_seq[i] == new_seq[(int64_t)i+1]) {
+						//continue;
+					}
+					dst[ArrowCache(new_seq[i], new_seq[i+1], false)] += src_count;
+				}
+		/*		if (new_seq.length() == 1) {continue;
+					static int breakhere = 0;
+					breakhere++;
+				}*/
+				if (new_seq[0] == 'A') {
+					static int breakhere = 0;
+					breakhere++;
+				}
+				dst[ArrowCache(new_seq.back(), 'A', false)] += src_count;
+				cout << "--" << endl;
+			}
+
+			uint64_t total = 0;
+		/*=	for (const auto& it: src) {
+//				cout << it.first.start << " to " << it.first.end << " is " << arrow_cache[it.first].sequence.length() << " steps\n";
+				total += it.second;
+			}*/
+			for (const auto& it : dst) {
+				cout << it.first.start << " to " << it.first.end << " is " << it.second << " steps\n";
+				total += it.second;
+			}
+
+			cout << "Total is " << total << endl;
+			src.clear();
+			static int breakhere = 0;
+			breakhere++;
+		}
+	
+		static int breakhere = 0;
+		breakhere++;
+	}
+}
+
+/*
+
+<A^A>^^AvvvA
+
+From Puzzle
+v<<A>>^A<A>AvA<^AA>A<vAAA>^A
+<vA<AA>>^AvAA<^A>A<v<A>>^AvA^A<vA>^A<v<A>^A>AAvA^A<v<A>A>^AAAvA<^A>A
+*/
 /**
  *
  */
 int main() {
 	cout << "Part one..........................................................\n";
-	part_one();
+//	part_one();
+
+	part_two();
 }
+
+/*
+
+v A ^ A > ^^ A vvv A
+
+Src = (A, <). count = 1, expanded = v<<
+Src = (v, A). count = 1, expanded = >^
+Src = (A, v). count = 1, expanded = <v
+Src = (A, >). count = 1, expanded = v
+Src = (A, ^). count = 1, expanded = <
+Src = (^, A). count = 2, expanded = >
+Src = (A, A). count = 1, expanded = A
+Src = (^, ^). count = 1, expanded = A
+Src = (v, v). count = 2, expanded = A
+Src = (>, ^). count = 1, expanded = <^
+
+v<<A>>^A<A>AvA<^AA>A<vAAA>^A.
+v<<A>>^A<A>AvA<^AA>A<vAAA>^A.
+
+
+
+
+
+
+*/
