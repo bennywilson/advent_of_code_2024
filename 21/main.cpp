@@ -164,6 +164,18 @@ Vec2 get_arrow_pos(const char num) {
 	return Vec2(-1, -1);
 }
 
+int dir_changes(const string& path) {
+	char start = path[0];
+	int count = 0;
+	for (int i = 1; i < path.size(); i++) {
+		if (path[i] != start) {
+			count++;
+			start = path[i];
+		}
+	}
+	return count;
+}
+
 void find_arrowpad_paths(const char start_digit, const char end_digit, vector<string>& sequences) {
 	const int64_t arrowpad_width = 3;
 	const int64_t arrowpad_height = 2;
@@ -179,7 +191,22 @@ void find_arrowpad_paths(const char start_digit, const char end_digit, vector<st
 		const PathNode cur_node = q.front();
 		q.pop();
 		if (cur_node.pos == end_pos) {
-			sequences.push_back(cur_node.path);
+
+			/*** OLD ***/
+			//sequences.push_back(cur_node.path);
+
+			/***********/
+
+			if (sequences.empty()) {
+				sequences.push_back(cur_node.path);
+			} else {
+				int cur_count = dir_changes(cur_node.path);
+				int existing_count = dir_changes(sequences[0]);
+				if (cur_count < existing_count) {
+					sequences[0] = cur_node.path;
+				}
+
+			}
 			continue;
 		}
 
@@ -210,6 +237,7 @@ x ^ A | x ^ A
 void finalize_arrowpad(const SequencePath& src_seq, PathLists& out_paths) {
 	PathLists path_1 = {src_seq[0]};
 	PathLists path_2;
+
 	for (int path_idx = 1; path_idx < src_seq.size(); path_idx++) {
 		vector<string>& src = (path_1.size() > 0) ? (path_1) : (path_2);
 		vector<string>& dst = (path_1.size() > 0) ? (path_2) : (path_1);
@@ -260,17 +288,18 @@ void part_one() {
 			PathLists& src_pathlists = (paths1.size() > 0)?(paths1):(paths2);
 			PathLists& dst_pathlists = (paths1.size() > 0)?(paths2):(paths1);
 
+			cout << "Robot " << robot_idx << endl;
 			for (const auto& cur_sequence : src_pathlists) {
 				vector<string> sequences = {};
 				find_arrowpad_paths('A', cur_sequence[0], sequences);
 				SequencePath sSequences = { sequences };
 
-				SequencePath test_seq = { sequences };
+				/*SequencePath test_seq = { sequences };
 				for (size_t i = 0; i < cur_sequence.size() - 1; i++) { // Skip \0 at end
 					vector<string> testsequences = {};
 					find_arrowpad_paths(cur_sequence[i], cur_sequence[i + 1], testsequences);
 					test_seq.push_back(testsequences);
-				}
+				}*/
 
 				size_t cmd_start = 0;
 
@@ -278,22 +307,28 @@ void part_one() {
 			//	SequencePath sSequences = { sequences };
 				while (cmd_start < cur_sequence.length()) {
 					string cache_val = cur_sequence.substr(cmd_start, cmd_end - cmd_start);
-
-					for (int64_t i = 0; i < ((int64_t)cache_val.size()) - 1; i++) { // Skip \0 at end
-							vector<string> sequences = {};
-							find_arrowpad_paths(cache_val[i], cache_val[i + 1], sequences);
-							sSequences.push_back(sequences);
-						}
-						//sSequences.push_back(sequences);
-						cache[cache_val] = sSequences;
-
+					/*if (std_contains(cache, cache_val)) {
+					//	cout << "Found cached val " << cache_val << endl;
+						sSequences.insert(sSequences.end(), cache[cache_val].begin(), cache[cache_val].end());
+					} else {*/
+					{
+						SequencePath local_seq;
+						for (int64_t i = cmd_start; cmd_end != cur_sequence.npos && i < cmd_end; i++) {
+								vector<string> sequences = {};
+								find_arrowpad_paths(cur_sequence[i], cur_sequence[i + 1], sequences);
+								local_seq.push_back(sequences);
+							}
+							//sSequences.push_back(sequences);
+							cache[cache_val] = local_seq;
+							sSequences.insert(sSequences.end(), local_seq.begin(), local_seq.end());
+					}
 					
-					cmd_start = cmd_end + 1;
-					cmd_end = cur_sequence.find('A', cmd_start);
+					cmd_start = cmd_end;
+					cmd_end = cur_sequence.find('A', cmd_start + 1);
 				}
 
 
-				finalize_arrowpad(test_seq, dst_pathlists);
+				finalize_arrowpad(sSequences, dst_pathlists);
 			}
 			src_pathlists.clear();
 		}
