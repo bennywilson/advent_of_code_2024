@@ -238,6 +238,17 @@ void finalize_arrowpad(const SequencePath& src_seq, PathLists& out_paths) {
 	PathLists path_1 = {src_seq[0]};
 	PathLists path_2;
 
+	static int done_once = 0;
+//	string concat;
+	if (done_once == 0) {
+		string concat;
+		for (int i = 0; i < src_seq.size(); i++) {
+			concat = concat + src_seq[i][0] + "A";
+		}
+		out_paths.push_back(concat);
+		return;
+	}
+	//done_once = 1;*/
 	for (int path_idx = 1; path_idx < src_seq.size(); path_idx++) {
 		vector<string>& src = (path_1.size() > 0) ? (path_1) : (path_2);
 		vector<string>& dst = (path_1.size() > 0) ? (path_2) : (path_1);
@@ -257,6 +268,21 @@ void finalize_arrowpad(const SequencePath& src_seq, PathLists& out_paths) {
 }
 
 unordered_map<string, SequencePath> cache;
+
+void shrink_list(PathLists& paths) {
+	size_t min_val = SIZE_MAX;
+	size_t idx;
+	vector<string>& src = paths;
+	for (size_t l = 0; l < src.size(); l++) {
+		if (src[l].size() < min_val) {
+			min_val = src[l].size();
+			idx = l;
+		}
+	}
+
+	paths[0] = paths[idx];
+	paths.resize(1);
+}
 
 void part_one() {
 	const string inputs[] = {
@@ -282,6 +308,8 @@ void part_one() {
 				s_all_path_lists.push_back(new_paths);
 			}
 			finalize_arrowpad(s_all_path_lists, paths1);
+
+			shrink_list(paths1);
 		}
 
 		for (int robot_idx = 0; robot_idx < 2; robot_idx++) {
@@ -307,19 +335,41 @@ void part_one() {
 			//	SequencePath sSequences = { sequences };
 				while (cmd_start < cur_sequence.length()) {
 					string cache_val = cur_sequence.substr(cmd_start, cmd_end - cmd_start);
-					/*if (std_contains(cache, cache_val)) {
+					if (std_contains(cache, cache_val)) {
 					//	cout << "Found cached val " << cache_val << endl;
 						sSequences.insert(sSequences.end(), cache[cache_val].begin(), cache[cache_val].end());
-					} else {*/
-					{
+
+						/*SequencePath test_seq;
+						for (int64_t i = cmd_start; cmd_end != cur_sequence.npos && i < cmd_end; i++) {
+							vector<string> sequences = {};
+							find_arrowpad_paths(cur_sequence[i], cur_sequence[i + 1], sequences);
+							test_seq.push_back(sequences);
+						}
+						if (test_seq != cache[cache_val]) {
+							SequencePath test_seq;
+							for (int64_t i = cmd_start; cmd_end != cur_sequence.npos && i < cmd_end; i++) {
+								vector<string> sequences = {};
+								find_arrowpad_paths(cur_sequence[i], cur_sequence[i + 1], sequences);
+								test_seq.push_back(sequences);
+							}
+						}*/
+
+					} else {
+						if (cache_val == "A") {
+							static int lordy = 1;
+							lordy++;
+						}
 						SequencePath local_seq;
 						for (int64_t i = cmd_start; cmd_end != cur_sequence.npos && i < cmd_end; i++) {
 								vector<string> sequences = {};
 								find_arrowpad_paths(cur_sequence[i], cur_sequence[i + 1], sequences);
 								local_seq.push_back(sequences);
 							}
+
 							//sSequences.push_back(sequences);
-							cache[cache_val] = local_seq;
+							if (cache_val.size() > 1) {
+								cache[cache_val] = local_seq;
+							}
 							sSequences.insert(sSequences.end(), local_seq.begin(), local_seq.end());
 					}
 					
