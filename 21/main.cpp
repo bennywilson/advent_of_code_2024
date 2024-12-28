@@ -214,19 +214,20 @@ void find_arrowpad_paths(const char start_digit, const char end_digit, vector<st
 		if (!cur_pos.valid_arrowpad_pos()) {
 			continue;
 		}
-
-		if (cur_pos.x < end_pos.x && cur_pos.right().valid_arrowpad_pos()) {
-			q.push(PathNode(cur_pos.right(), cur_pos, cur_node.path + '>'));
-		}
 		if (cur_pos.x > end_pos.x && cur_pos.left().valid_arrowpad_pos()) {
 			q.push(PathNode(cur_pos.left(), cur_pos, cur_node.path + '<'));
-		}
-		if (cur_pos.y < end_pos.y && cur_pos.down().valid_arrowpad_pos()) {
-			q.push(PathNode(cur_pos.down(), cur_pos, cur_node.path + 'v'));
 		}
 		if (cur_pos.y > end_pos.y && cur_pos.up().valid_arrowpad_pos()) {
 			q.push(PathNode(cur_pos.up(), cur_pos, cur_node.path + '^'));
 		}
+
+		if (cur_pos.x < end_pos.x && cur_pos.right().valid_arrowpad_pos()) {
+			q.push(PathNode(cur_pos.right(), cur_pos, cur_node.path + '>'));
+		}
+		if (cur_pos.y < end_pos.y && cur_pos.down().valid_arrowpad_pos()) {
+			q.push(PathNode(cur_pos.down(), cur_pos, cur_node.path + 'v'));
+		}
+
 	}
 }
 
@@ -240,7 +241,7 @@ void finalize_arrowpad(const SequencePath& src_seq, PathLists& out_paths) {
 
 	static int done_once = 0;
 //	string concat;
-	if (done_once == 0) {
+	if (done_once == 1) {
 		string concat;
 		for (int i = 0; i < src_seq.size(); i++) {
 			concat = concat + src_seq[i][0] + "A";
@@ -248,7 +249,7 @@ void finalize_arrowpad(const SequencePath& src_seq, PathLists& out_paths) {
 		out_paths.push_back(concat);
 		return;
 	}
-	//done_once = 1;*/
+	done_once = 1;
 	for (int path_idx = 1; path_idx < src_seq.size(); path_idx++) {
 		vector<string>& src = (path_1.size() > 0) ? (path_1) : (path_2);
 		vector<string>& dst = (path_1.size() > 0) ? (path_2) : (path_1);
@@ -481,13 +482,26 @@ void part_two() {
 	CACHE_PATH('v', '<');
 	arrow_cache[ArrowCache('v', 'v')] = ArrowInfo(1, "A");
 
-	const string inputs[] = {
-		"029A",
+/*	const string inputs[] = {
 		"803A",
 		"528A",
 		"586A",
 		"341A",
 		"319A"
+	};*/
+	/*const string inputs[] = {
+		//"029A",
+		//"980A",
+	//	"179A",
+		//"456A",
+		//"379A",
+	};*/
+	const string inputs[] = {
+	//	"029A",
+		//"980A",
+		//"179A",
+		"456A",
+		//"379A",
 	};
 
 	int64_t complexity_sum = 0;
@@ -514,7 +528,7 @@ void part_two() {
 			map_1[ArrowCache(paths1[0][i], paths1[0][i + 1])]++;
 		}
 		//map_1[ArrowCache(paths1[0].back(), 'A')]++;
-
+ 
 		unordered_map<ArrowCache, uint64_t> map_2;
 
 		// paths_1 start <A^A>^^AvvvA
@@ -525,7 +539,7 @@ void part_two() {
 			for (const auto& key: src) {
 				uint64_t src_count = key.second;
 				const string new_seq = expand_sequence(key.first.start, key.first.end, arrow_cache);
-				cout << "Src = (" << key.first.start << ", " << key.first.end << "). count = " << key.second << ", expanded = " << new_seq << endl;
+		//		cout << "Src = (" << key.first.start << ", " << key.first.end << "). count = " << key.second << ", expanded = " << new_seq << endl;
 
 				dst[ArrowCache('A', new_seq[0], false)] += src_count;
 
@@ -550,7 +564,7 @@ void part_two() {
 					breakhere++;
 				}
 				dst[ArrowCache(new_seq.back(), 'A', false)] += src_count;
-				cout << "--" << endl;
+				//cout << "--" << endl;
 			}
 
 			uint64_t total = 0;
@@ -559,28 +573,65 @@ void part_two() {
 				total += it.second;
 			}*/
 			for (const auto& it : dst) {
-				cout << it.first.start << " to " << it.first.end << " is " << it.second << " steps\n";
+			//	cout << it.first.start << " to " << it.first.end << " is " << it.second << " steps\n";
 				total += it.second;
 			}
-
+/*
 			cout << "Total is " << total << endl;
+			const int64_t input_as_number = std::atoi(input.substr(0, 3).c_str());
+			cout << "Numerical portion of input is " << input_as_number << endl;
+			cout << "Score is " << total * input_as_number << endl;
+			complexity_sum += total * input_as_number;*/
 			src.clear();
-			static int breakhere = 0;
-			breakhere++;
 		}
-	
+		unordered_map<ArrowCache, uint64_t>& src = (map_1.size() > 0) ? (map_1) : (map_2);
+		uint64_t total = 0;
+		/*=	for (const auto& it: src) {
+//				cout << it.first.start << " to " << it.first.end << " is " << arrow_cache[it.first].sequence.length() << " steps\n";
+				total += it.second;
+			}*/
+		for (const auto& it : src) {
+			//	cout << it.first.start << " to " << it.first.end << " is " << it.second << " steps\n";
+			total += it.second;
+		}
+		cout << "Total is " << total << endl;
+		const int64_t input_as_number = std::atoi(input.substr(0, 3).c_str());
+		cout << "Numerical portion of input is " << input_as_number << endl;
+		cout << "Score is " << total * input_as_number << endl;
+		complexity_sum += total * input_as_number;
+		src.clear();
 		static int breakhere = 0;
 		breakhere++;
 	}
+
+	cout << "Complexity sum is " << complexity_sum << endl;
 }
 
 /*
 
+		7	8	9
+		4	5	6
+		1	2	3
+		X	0	A
+
 <A^A>^^AvvvA
 
 From Puzzle
-v<<A>>^A<A>AvA<^AA>A<vAAA>^A
+
+029A: Correct with 68
 <vA<AA>>^AvAA<^A>A<v<A>>^AvA^A<vA>^A<v<A>^A>AAvA^A<v<A>A>^AAAvA<^A>A
+
+980A: Correct with 60
+<v<A>>^AAAvA^A<vA<AA>>^AvAA<^A>A<v<A>A>^AAAvA<^A>A<vA>^A<A>A
+
+179A Incorrect.  Should be 68 but returning 76
+<v<A>>^A<vA<A>>^AAvAA<^A>A<v<A>>^AAvA^A<vA>^AA<A>A<v<A>A>^AAAvA<^A>A
+
+456A Incorrect.  Should be 64 but returning 74
+<v<A>>^AA<vA<A>>^AAvAA<^A>A<vA>^A<A>A<vA>^A<A>A<v<A>A>^AAvA<^A>A
+
+379A Correct
+<v<A>>^AvA^A<vA<AA>>^AAvA<^A>AAvA^A<vA>^AA<A>A<v<A>A>^AAAvA<^A>A
 */
 /**
  *
