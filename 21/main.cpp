@@ -164,10 +164,10 @@ Vec2 get_arrow_pos(const char num) {
 	return Vec2(-1, -1);
 }
 
-int dir_changes(const string& path) {
+int64_t dir_changes(const string& path) {
 	char start = path[0];
-	int count = 0;
-	for (int i = 1; i < path.size(); i++) {
+	int64_t count = 0;
+	for (uint64_t i = 1; i < path.size(); i++) {
 		if (path[i] != start) {
 			count++;
 			start = path[i];
@@ -240,8 +240,8 @@ void finalize_arrowpad(const SequencePath& src_seq, PathLists& out_paths) {
 	PathLists path_2;
 
 	static int done_once = 0;
-//	string concat;
-/*if (done_once == 1) {
+//	string concat;/*
+if (done_once == 1) {
 		string concat;
 		for (int i = 0; i < src_seq.size(); i++) {
 			concat = concat + src_seq[i][0] + "A";
@@ -249,8 +249,8 @@ void finalize_arrowpad(const SequencePath& src_seq, PathLists& out_paths) {
 		out_paths.push_back(concat);
 		return;
 	}
-	done_once = 1;*/
-	for (int path_idx = 1; path_idx < src_seq.size(); path_idx++) {
+//	done_once = 1;
+	for (uint64_t path_idx = 1; path_idx < src_seq.size(); path_idx++) {
 		vector<string>& src = (path_1.size() > 0) ? (path_1) : (path_2);
 		vector<string>& dst = (path_1.size() > 0) ? (path_2) : (path_1);
 
@@ -263,7 +263,7 @@ void finalize_arrowpad(const SequencePath& src_seq, PathLists& out_paths) {
 		src.clear();
 	}
 	vector<string>& src2 = (path_1.size() > 0) ? (path_1) : (path_2);
-	for (int i = 0; i < src2.size(); i++) {
+	for (uint64_t i = 0; i < src2.size(); i++) {
 		out_paths.push_back(src2[i] + 'A');
 	}
 }
@@ -298,8 +298,8 @@ void part_one() {
 		"341A",
 		"319A"
 	};
-	int64_t complexity_sum = 0;
-	for (int input_idx = 0; input_idx < 5; input_idx++) {
+	uint64_t complexity_sum = 0;
+	for (uint64_t input_idx = 0; input_idx < 5; input_idx++) {
 		const string& input = inputs[input_idx];
 
 		PathLists paths1, paths2;
@@ -318,7 +318,7 @@ void part_one() {
 			shrink_list(paths1);
 		}
 
-		for (int robot_idx = 0; robot_idx < 2; robot_idx++) {
+		for (uint64_t robot_idx = 0; robot_idx < 2; robot_idx++) {
 			PathLists& src_pathlists = (paths1.size() > 0)?(paths1):(paths2);
 			PathLists& dst_pathlists = (paths1.size() > 0)?(paths2):(paths1);
 
@@ -366,7 +366,7 @@ void part_one() {
 							lordy++;
 						}
 						SequencePath local_seq;
-						for (int64_t i = cmd_start; cmd_end != (int64_t)cur_sequence.npos && i < cmd_end; i++) {
+						for (uint64_t i = cmd_start; cmd_end != (uint64_t)cur_sequence.npos && i < cmd_end; i++) {
 								vector<string> sequences = {};
 								find_arrowpad_paths(cur_sequence[i], cur_sequence[i + 1], sequences);
 								local_seq.push_back(sequences);
@@ -445,21 +445,21 @@ void part_two() {
 
 	PathLists sequences;
 	unordered_map<ArrowCache, ArrowInfo> arrow_cache;
-
+	unordered_map<ArrowCache, ArrowInfo> numpad_cache;
 	#define CACHE_PATH(A, B) \
 		sequences.clear(); \
 		find_arrowpad_paths(A, B, sequences); \
 		shrink_list(sequences); \
 		arrow_cache[ArrowCache(A, B)] = ArrowInfo(sequences.size(), sequences[0]);
 
-	CACHE_PATH('A', '^');
+	/*CACHE_PATH('A', '^');
 	CACHE_PATH('A', '<');
 	CACHE_PATH('A', 'v');
 	CACHE_PATH('A', '>');
 	arrow_cache[ArrowCache('A', 'A')] = ArrowInfo(1, "A");
 
 	CACHE_PATH('^', 'A');
-	CACHE_PATH('^', '>');
+	CACHE_PATH('^', '>');	// > v vs    v>
 	CACHE_PATH('^', 'v');
 	CACHE_PATH('^', '<');
 	arrow_cache[ArrowCache('^', '^')] = ArrowInfo(1, "A");
@@ -482,6 +482,171 @@ void part_two() {
 	CACHE_PATH('v', '>');
 	CACHE_PATH('v', '<');
 	arrow_cache[ArrowCache('v', 'v')] = ArrowInfo(1, "A");
+*/
+
+
+		arrow_cache[ArrowCache('^', '^')] = ArrowInfo(1, "A");
+		arrow_cache[ArrowCache('^', 'A')] = ArrowInfo(1, ">A");
+		arrow_cache[ArrowCache('^', '<')] = ArrowInfo(1, "v<A");
+		arrow_cache[ArrowCache('^', 'v')] = ArrowInfo(1, "vA");
+		arrow_cache[ArrowCache('^', '>')] = ArrowInfo(1, "v>A");
+
+		arrow_cache[ArrowCache('A', '^')] = ArrowInfo(1, "<A");
+		arrow_cache[ArrowCache('A', 'A')] = ArrowInfo(1, "A");
+		arrow_cache[ArrowCache('A', '<')] = ArrowInfo(1, "v<<A");
+		arrow_cache[ArrowCache('A', 'v')] = ArrowInfo(1, "<vA");
+		arrow_cache[ArrowCache('A', '>')] = ArrowInfo(1, "vA");
+
+		arrow_cache[ArrowCache('<', '^')] = ArrowInfo(1, ">^A");
+		arrow_cache[ArrowCache('<', 'A')] = ArrowInfo(1, ">>^A");
+		arrow_cache[ArrowCache('<', '<')] = ArrowInfo(1, "A");
+		arrow_cache[ArrowCache('<', 'v')] = ArrowInfo(1, ">A");
+		arrow_cache[ArrowCache('<', '>')] = ArrowInfo(1, ">>A");
+
+		arrow_cache[ArrowCache('v', '^')] = ArrowInfo(1, "^A");
+		arrow_cache[ArrowCache('v', 'A')] = ArrowInfo(1, "^>A");
+		arrow_cache[ArrowCache('v', '<')] = ArrowInfo(1, "<A");
+		arrow_cache[ArrowCache('v', 'v')] = ArrowInfo(1, "A");
+		arrow_cache[ArrowCache('v', '>')] = ArrowInfo(1, ">A");
+
+		arrow_cache[ArrowCache('>', '^')] = ArrowInfo(1, "<^A");
+		arrow_cache[ArrowCache('>', 'A')] = ArrowInfo(1, "^A");
+		arrow_cache[ArrowCache('>', '<')] = ArrowInfo(1, "<<A");
+		arrow_cache[ArrowCache('>', 'v')] =  ArrowInfo(1, "<A");
+		arrow_cache[ArrowCache('>', '>')] = ArrowInfo(1, "A");
+
+		numpad_cache[ArrowCache('0', '0')] = ArrowInfo(1, "A");
+		numpad_cache[ArrowCache('0', '1')] = ArrowInfo(1, "^<A");
+		numpad_cache[ArrowCache('0', '2')] = ArrowInfo(1, "^A");
+		numpad_cache[ArrowCache('0', '3')] = ArrowInfo(1, ">^A");
+		numpad_cache[ArrowCache('0', '4')] = ArrowInfo(1, "^^<A");
+		numpad_cache[ArrowCache('0', '5')] = ArrowInfo(1, "^^A");
+		numpad_cache[ArrowCache('0', '6')] = ArrowInfo(1, ">^^A");
+		numpad_cache[ArrowCache('0', '7')] = ArrowInfo(1, "^^^<A");
+		numpad_cache[ArrowCache('0', '8')] = ArrowInfo(1, "^^^A");
+		numpad_cache[ArrowCache('0', '9')] = ArrowInfo(1, ">^^^A");
+		numpad_cache[ArrowCache('0', 'A')] = ArrowInfo(1, ">A");
+
+		numpad_cache[ArrowCache('1', '0')] = ArrowInfo(1, ">vA");
+		numpad_cache[ArrowCache('1', '1')] = ArrowInfo(1, "A");
+		numpad_cache[ArrowCache('1', '2')] = ArrowInfo(1, ">A");
+		numpad_cache[ArrowCache('1', '3')] = ArrowInfo(1, ">>A");
+		numpad_cache[ArrowCache('1', '4')] = ArrowInfo(1, "^A");
+		numpad_cache[ArrowCache('1', '5')] = ArrowInfo(1, "^>A");
+		numpad_cache[ArrowCache('1', '6')] = ArrowInfo(1, "^>>A");
+		numpad_cache[ArrowCache('1', '7')] = ArrowInfo(1, "^^A");
+		numpad_cache[ArrowCache('1', '8')] = ArrowInfo(1, "^^>A");
+		numpad_cache[ArrowCache('1', '9')] = ArrowInfo(1, "^^>>A");
+		numpad_cache[ArrowCache('1', 'A')] = ArrowInfo(1, ">>vA");
+		
+		numpad_cache[ArrowCache('2', '0')] = ArrowInfo(1, "<vA");
+		numpad_cache[ArrowCache('2', '1')] = ArrowInfo(1, "<A");
+		numpad_cache[ArrowCache('2', '2')] = ArrowInfo(1, "A");
+		numpad_cache[ArrowCache('2', '3')] = ArrowInfo(1, ">A");
+		numpad_cache[ArrowCache('2', '4')] = ArrowInfo(1, "<^A");
+		numpad_cache[ArrowCache('2', '5')] = ArrowInfo(1, "^A");
+		numpad_cache[ArrowCache('2', '6')] = ArrowInfo(1, "^>A");
+		numpad_cache[ArrowCache('2', '7')] = ArrowInfo(1, "<^^A");
+		numpad_cache[ArrowCache('2', '8')] = ArrowInfo(1, "^^A");
+		numpad_cache[ArrowCache('2', '9')] = ArrowInfo(1, "^^>A");
+		numpad_cache[ArrowCache('2', 'A')] = ArrowInfo(1, "v>A");
+
+		numpad_cache[ArrowCache('3', '0')] = ArrowInfo(1, "<vA");
+		numpad_cache[ArrowCache('3', '1')] = ArrowInfo(1, "<<A");
+		numpad_cache[ArrowCache('3', '2')] = ArrowInfo(1, "<A");
+		numpad_cache[ArrowCache('3', '3')] = ArrowInfo(1, "A");
+		numpad_cache[ArrowCache('3', '4')] = ArrowInfo(1, "<<^A");
+		numpad_cache[ArrowCache('3', '5')] = ArrowInfo(1, "<^A");
+		numpad_cache[ArrowCache('3', '6')] = ArrowInfo(1, "^A");
+		numpad_cache[ArrowCache('3', '7')] = ArrowInfo(1, "<<^^A");
+		numpad_cache[ArrowCache('3', '8')] = ArrowInfo(1, "<^^A");
+		numpad_cache[ArrowCache('3', '9')] = ArrowInfo(1, "^^A");
+		numpad_cache[ArrowCache('3', 'A')] = ArrowInfo(1, "vA");
+
+		numpad_cache[ArrowCache('4', '0')] = ArrowInfo(1, ">vvA");
+		numpad_cache[ArrowCache('4', '1')] = ArrowInfo(1, "vA");
+		numpad_cache[ArrowCache('4', '2')] = ArrowInfo(1, "v>A");
+		numpad_cache[ArrowCache('4', '3')] = ArrowInfo(1, "v>>A");
+		numpad_cache[ArrowCache('4', '4')] = ArrowInfo(1, "A");
+		numpad_cache[ArrowCache('4', '5')] = ArrowInfo(1, ">A");
+		numpad_cache[ArrowCache('4', '6')] = ArrowInfo(1, ">>A");
+		numpad_cache[ArrowCache('4', '7')] = ArrowInfo(1, "^A");
+		numpad_cache[ArrowCache('4', '8')] = ArrowInfo(1, "^>A");
+		numpad_cache[ArrowCache('4', '9')] = ArrowInfo(1, "^>>A");
+		numpad_cache[ArrowCache('4', 'A')] = ArrowInfo(1, ">>vvA");
+
+		numpad_cache[ArrowCache('5', '0')] = ArrowInfo(1, "vvA");
+		numpad_cache[ArrowCache('5', '1')] = ArrowInfo(1, "<vA");
+		numpad_cache[ArrowCache('5', '2')] = ArrowInfo(1, "vA");
+		numpad_cache[ArrowCache('5', '3')] = ArrowInfo(1, "v>A");
+		numpad_cache[ArrowCache('5', '4')] = ArrowInfo(1, "<A");
+		numpad_cache[ArrowCache('5', '5')] = ArrowInfo(1, "A");
+		numpad_cache[ArrowCache('5', '6')] = ArrowInfo(1, ">A");
+		numpad_cache[ArrowCache('5', '7')] = ArrowInfo(1, "<^A");
+		numpad_cache[ArrowCache('5', '8')] = ArrowInfo(1, "^A");
+		numpad_cache[ArrowCache('5', '9')] = ArrowInfo(1, "^>A");
+		numpad_cache[ArrowCache('5', 'A')] = ArrowInfo(1, "vv>A");
+
+		numpad_cache[ArrowCache('6', '0')] = ArrowInfo(1, "<vvA");
+		numpad_cache[ArrowCache('6', '1')] = ArrowInfo(1, "<<vA");
+		numpad_cache[ArrowCache('6', '2')] = ArrowInfo(1, "<vA");
+		numpad_cache[ArrowCache('6', '3')] = ArrowInfo(1, "vA");
+		numpad_cache[ArrowCache('6', '4')] = ArrowInfo(1, "<<A");
+		numpad_cache[ArrowCache('6', '5')] = ArrowInfo(1, "<A");
+		numpad_cache[ArrowCache('6', '6')] = ArrowInfo(1, "A");
+		numpad_cache[ArrowCache('6', '7')] = ArrowInfo(1, "<<^A");
+		numpad_cache[ArrowCache('6', '8')] = ArrowInfo(1, "<A");
+		numpad_cache[ArrowCache('6', '9')] = ArrowInfo(1, "^A");
+		numpad_cache[ArrowCache('6', 'A')] = ArrowInfo(1, "vvA");
+
+		numpad_cache[ArrowCache('7', '0')] = ArrowInfo(1, ">vvvA");
+		numpad_cache[ArrowCache('7', '1')] = ArrowInfo(1, "vvA");
+		numpad_cache[ArrowCache('7', '2')] = ArrowInfo(1, "vv>A");
+		numpad_cache[ArrowCache('7', '3')] = ArrowInfo(1, "vv>>A");
+		numpad_cache[ArrowCache('7', '4')] = ArrowInfo(1, "vA");
+		numpad_cache[ArrowCache('7', '5')] = ArrowInfo(1, "v>A");
+		numpad_cache[ArrowCache('7', '6')] = ArrowInfo(1, "v>>A");
+		numpad_cache[ArrowCache('7', '7')] = ArrowInfo(1, "A");
+		numpad_cache[ArrowCache('7', '8')] = ArrowInfo(1, ">A");
+		numpad_cache[ArrowCache('7', '9')] = ArrowInfo(1, ">>A");
+		numpad_cache[ArrowCache('7', 'A')] = ArrowInfo(1, ">>vvvA");
+
+		numpad_cache[ArrowCache('8', '0')] = ArrowInfo(1, "vvvA");
+		numpad_cache[ArrowCache('8', '1')] = ArrowInfo(1, "<vvA");
+		numpad_cache[ArrowCache('8', '2')] = ArrowInfo(1, "vvA");
+		numpad_cache[ArrowCache('8', '3')] = ArrowInfo(1, "vv>A");
+		numpad_cache[ArrowCache('8', '4')] = ArrowInfo(1, "<vA");
+		numpad_cache[ArrowCache('8', '5')] = ArrowInfo(1, "vA");
+		numpad_cache[ArrowCache('8', '6')] = ArrowInfo(1, "v>A");
+		numpad_cache[ArrowCache('8', '7')] = ArrowInfo(1, "<A");
+		numpad_cache[ArrowCache('8', '8')] = ArrowInfo(1, "A");
+		numpad_cache[ArrowCache('8', '9')] = ArrowInfo(1, ">A");
+		numpad_cache[ArrowCache('8', 'A')] = ArrowInfo(1, "vvv>A");
+
+
+		numpad_cache[ArrowCache('9', '0')] = ArrowInfo(1, "<vvvA");
+		numpad_cache[ArrowCache('9', '1')] = ArrowInfo(1, "<<vvA");
+		numpad_cache[ArrowCache('9', '2')] = ArrowInfo(1, "<vvA");
+		numpad_cache[ArrowCache('9', '3')] = ArrowInfo(1, "vvA");
+		numpad_cache[ArrowCache('9', '4')] = ArrowInfo(1, "<<vA");
+		numpad_cache[ArrowCache('9', '5')] = ArrowInfo(1, "<vA");
+		numpad_cache[ArrowCache('9', '6')] = ArrowInfo(1, "vA");
+		numpad_cache[ArrowCache('9', '7')] = ArrowInfo(1, "<<A");
+		numpad_cache[ArrowCache('9', '8')] = ArrowInfo(1, "<A");
+		numpad_cache[ArrowCache('9', '9')] = ArrowInfo(1, "A");
+		numpad_cache[ArrowCache('9', 'A')] = ArrowInfo(1, "vvvA");
+
+		numpad_cache[ArrowCache('A', '0')] = ArrowInfo(1, "<A");
+		numpad_cache[ArrowCache('A', '1')] = ArrowInfo(1, "^<<A");
+		numpad_cache[ArrowCache('A', '2')] = ArrowInfo(1, "<^A");
+		numpad_cache[ArrowCache('A', '3')] = ArrowInfo(1, "^A");
+		numpad_cache[ArrowCache('A', '4')] = ArrowInfo(1, "^^<<A");
+		numpad_cache[ArrowCache('A', '5')] = ArrowInfo(1, "<^^A");
+		numpad_cache[ArrowCache('A', '6')] = ArrowInfo(1, "^^A");
+		numpad_cache[ArrowCache('A', '7')] = ArrowInfo(1, "^^^<<A");
+		numpad_cache[ArrowCache('A', '8')] = ArrowInfo(1, "<^^^A");
+		numpad_cache[ArrowCache('A', '9')] = ArrowInfo(1, "^^^A");
+		numpad_cache[ArrowCache('A', 'A')] = ArrowInfo(1, "A");
 
 	const string inputs[] = {
 		"803A",
@@ -490,14 +655,8 @@ void part_two() {
 		"341A",
 		"319A"
 	};
-	/*const string inputs[] = {
-		//"029A",
-		//"980A",
-	//	"179A",
-		//"456A",
-		//"379A",
-	};*/
-	/*const string inputs[] = {
+/*
+	const string inputs[] = {
 		"029A",
 		"980A",
 		"179A",
@@ -505,145 +664,87 @@ void part_two() {
 		"379A",
 	};*/
 
-	int64_t complexity_sum = 0;
-	for (int input_idx = 0; input_idx < 5; input_idx++) {
+	uint64_t complexity_sum = 0;
+	for (uint64_t input_idx = 0; input_idx < 5; input_idx++) {
 		const string& input = inputs[input_idx];
 
-		PathLists paths1;
-		PathLists new_paths;
-		find_numpad_paths('A', input[0], new_paths);
-		vector<PathLists> s_all_path_lists = { new_paths };
-
-		for (size_t i = 0; i < input.size() - 1; i++) {
-			PathLists new_paths;
-			find_numpad_paths(input[i], input[i + 1], new_paths);
-			s_all_path_lists.push_back(new_paths);
-		}
-		finalize_arrowpad(s_all_path_lists, paths1);
-
-	//	paths1[0] = paths1[0];
-	//	paths1.resize(1);
-		shrink_list(paths1);
-		
+		string test_path = numpad_cache[ArrowCache('A', input[0])].sequence;
+		test_path += numpad_cache[ArrowCache(input[0], input[1])].sequence;
+		test_path += numpad_cache[ArrowCache(input[1], input[2])].sequence;
+		test_path += numpad_cache[ArrowCache(input[2], input[3])].sequence;
+		PathLists paths1 = { test_path };
 		unordered_map<ArrowCache, uint64_t> map_1;
 		map_1[ArrowCache('A', paths1[0][0])] = 1;
-		for (int i = 0; i < paths1[0].size() - 1; i++) {
+		for (uint64_t i = 0; i < paths1[0].size() - 1; i++) {
 			map_1[ArrowCache(paths1[0][i], paths1[0][i + 1])]++;
 		}
-		//map_1[ArrowCache(paths1[0].back(), 'A')]++;
  
 		unordered_map<ArrowCache, uint64_t> map_2;
 
-		// paths_1 start <A^A>^^AvvvA
-		for (int robot_idx = 0; robot_idx < 2; robot_idx++) {
+		for (uint64_t robot_idx = 0; robot_idx < 25; robot_idx++) {
 			unordered_map<ArrowCache, uint64_t>& src = (map_1.size() > 0)?(map_1):(map_2);
 			unordered_map<ArrowCache, uint64_t>& dst = (map_1.size() > 0) ? (map_2) : (map_1);
-	
 			for (const auto& key: src) {
 				uint64_t src_count = key.second;
 				const string new_seq = expand_sequence(key.first.start, key.first.end, arrow_cache);
-			//	cout << "Src = (" << key.first.start << ", " << key.first.end << "). count = " << key.second << ", expanded = " << new_seq << endl;
-
-				dst[ArrowCache('A', new_seq[0], false)] += src_count;
-
-				if (new_seq[0] == 'A') {
+				if (key.first.start == key.first.end) {
+					dst[ArrowCache('A', 'A')] += src_count;
 					continue;
 				}
-
-				for (int i = 0; i < new_seq.size() - 1; i++) {
+				dst[ArrowCache('A', new_seq[0], false)] += src_count;
+				for (uint64_t i = 0; i < new_seq.size() - 1; i++) {
 					dst[ArrowCache(new_seq[i], new_seq[i+1], false)] += src_count;
 				}
-				dst[ArrowCache(new_seq.back(), 'A', false)] += src_count;
-			}
-
-			uint64_t total = 0;
-			for (const auto& it : dst) {
-			//	cout << it.first.start << " to " << it.first.end << " is " << it.second << " steps\n";
-				total += it.second;
 			}
 			src.clear();
 		}
 		unordered_map<ArrowCache, uint64_t>& src = (map_1.size() > 0) ? (map_1) : (map_2);
 		uint64_t total = 0;
-		/*=	for (const auto& it: src) {
-//				cout << it.first.start << " to " << it.first.end << " is " << arrow_cache[it.first].sequence.length() << " steps\n";
-				total += it.second;
-			}*/
 		for (const auto& it : src) {
-			//	cout << it.first.start << " to " << it.first.end << " is " << it.second << " steps\n";
 			total += it.second;
 		}
 		cout << "Total is " << total << endl;
-		const int64_t input_as_number = std::atoi(input.substr(0, 3).c_str());
+		const uint64_t input_as_number = std::atoi(input.substr(0, 3).c_str());
 		cout << "Numerical portion of input is " << input_as_number << endl;
 		cout << "Score is " << total * input_as_number << endl;
 		complexity_sum += total * input_as_number;
 		src.clear();
-		static int breakhere = 0;
-		breakhere++;
 	}
 
 	cout << "Complexity sum is " << complexity_sum << endl;
 }
 
-/*
-
-		7	8	9
-		4	5	6
-		1	2	3
-		X	0	A
-
-<A^A>^^AvvvA
-
-From Puzzle
-
-029A: Correct with 68
-<vA<AA>>^AvAA<^A>A<v<A>>^AvA^A<vA>^A<v<A>^A>AAvA^A<v<A>A>^AAAvA<^A>A
-
-980A: Correct with 60
-<v<A>>^AAAvA^A<vA<AA>>^AvAA<^A>A<v<A>A>^AAAvA<^A>A<vA>^A<A>A
-
-179A Incorrect.  Should be 68 but returning 76
-<v<A>>^A<vA<A>>^AAvAA<^A>A<v<A>>^AAvA^A<vA>^AA<A>A<v<A>A>^AAAvA<^A>A
-
-456A Incorrect.  Should be 64 but returning 74
-<v<A>>^AA<vA<A>>^AAvAA<^A>A<vA>^A<A>A<vA>^A<A>A<v<A>A>^AAvA<^A>A
-
-379A Correct
-<v<A>>^AvA^A<vA<AA>>^AAvA<^A>AAvA^A<vA>^AA<A>A<v<A>A>^AAAvA<^A>A
-*/
 /**
  *
  */
 int main() {
 	cout << "Part one..........................................................\n";
-	//part_one();
+	part_one();
+
+	cout << "Part two..........................................................\n";
 
 	part_two();
 }
-
 /*
 
-v A ^ A > ^^ A vvv A
+// Valid 029A paths
+029A
+<vA<AA>>^AvAA<^A>A<v<A>>^AvA^A<vA>^A<v<A>^A>AAvA^A<v<A>A>^AAAvA<^A>A
 
-Src = (A, <). count = 1, expanded = v<<
-Src = (v, A). count = 1, expanded = >^
-Src = (A, v). count = 1, expanded = <v
-Src = (A, >). count = 1, expanded = v
-Src = (A, ^). count = 1, expanded = <
-Src = (^, A). count = 2, expanded = >
-Src = (A, A). count = 1, expanded = A
-Src = (^, ^). count = 1, expanded = A
-Src = (v, v). count = 2, expanded = A
-Src = (>, ^). count = 1, expanded = <^
+980A
+<v<A>>^AAAvA^A<vA<AA>>^AvAA<^A>A<v<A>A>^AAAvA<^A>A<vA>^A<A>A
 
-v<<A>>^A<A>AvA<^AA>A<vAAA>^A.
-v<<A>>^A<A>AvA<^AA>A<vAAA>^A.
+179A
+<v<A>>^A<vA<A>>^AAvAA<^A>A<v<A>>^AAvA^A<vA>^AA<A>A<v<A>A>^AAAvA<^A>A
 
+456A
+<v<A>>^AA<vA<A>>^AAvAA<^A>A<vA>^A<A>A<vA>^A<A>A<v<A>A>^AAvA<^A>A
 
-
-<^^^AvvvA>^AvA
-<v<A>^AAA>A<vAAA^>AvA<^A>A<vA^>A
-<vA<AA>^>AvA<^A>AAAvA^A<v<A>A^>AAA<A>vA^A<vA^>A<v<A>^A>AvA^A<v<A>A^>A<A>vA^A
+379A
+<v<A>>^AvA^A<vA<AA>>^AAvA<^A>AAvA^A<vA>^AA<A>A<v<A>A>^AAAvA<^A>A
 
 */
+// Too High 280096795185282
+//  235047181384194
+//	228800606998554 <- ?
+//	229863014346622
